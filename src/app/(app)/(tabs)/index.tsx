@@ -13,7 +13,9 @@ import { api, errorOf, type ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { dur, fmtHM, fmtLongDate, fmtTime, greeting, lagosHM } from '@/lib/format';
 import { getPosition } from '@/lib/geo';
-import { getPasskey } from '@/lib/passkey';
+import { getPasskey, passkeyMessage } from '@/lib/passkey';
+import { useDeviceSecurity } from '@/hooks/useDeviceSecurity';
+import { SecurityNotice } from '@/components/attendance/SecurityNotice';
 import { colors } from '@/theme';
 import type { Today } from '@/types';
 
@@ -21,6 +23,7 @@ const hm5 = (s: string) => s.slice(0, 5);
 
 export default function Home() {
   const { me } = useAuth();
+  const { sec } = useDeviceSecurity();
   const qc = useQueryClient();
   const online = useOnline();
   const [busy, setBusy] = useState('');
@@ -58,7 +61,7 @@ export default function Home() {
       qc.invalidateQueries({ queryKey: ['today'] });
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
-      setErr(e?.code && e?.message && !e.response ? e : errorOf(e));
+      setErr(e?.code?.startsWith?.('PASSKEY') ? { code: e.code, message: passkeyMessage(e) } : e?.code && e?.message && !e.response ? e : errorOf(e));
     } finally { setBusy(''); }
   }
 
@@ -101,6 +104,7 @@ export default function Home() {
           <Alert tone="warn">Authenticator MFA is required for your account.{' '}
             <Link href="/device" className="font-bold text-navy">Set it up now →</Link></Alert>
         ) : null}
+        {state !== 'checked_out' ? <SecurityNotice sec={sec} /> : null}
         {success ? <Alert tone="success"><Text className="text-[16px] font-extrabold">✓ {success}</Text></Alert> : null}
         {err ? <Alert tone="error">{err.message}</Alert> : null}
       </View>

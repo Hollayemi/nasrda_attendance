@@ -17,6 +17,9 @@ export const api = axios.create({
   },
 });
 
+// ---- CSRF ------------------------------------------------------------------------------
+// Browsers read document.cookie; React Native can't. The csrftoken arrives in a Set-Cookie
+// header, so we capture it from responses and echo it back as X-CSRFToken (double-submit).
 let csrfToken = '';
 const capture = (headers: unknown) => {
   const raw = (headers as Record<string, unknown> | undefined)?.['set-cookie'];

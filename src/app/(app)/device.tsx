@@ -7,7 +7,9 @@ import { Alert, Button, ButtonRow, Card, Icon, Loading, Muted, Screen, TextField
 import { api, errorOf } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { fmtDate } from '@/lib/format';
-import { createPasskey, passkeysSupported } from '@/lib/passkey';
+import { createPasskey, passkeyMessage, passkeysLinked } from '@/lib/passkey';
+import { useDeviceSecurity } from '@/hooks/useDeviceSecurity';
+import { SecurityNotice } from '@/components/attendance/SecurityNotice';
 import { colors } from '@/theme';
 import type { Device } from '@/types';
 
@@ -15,6 +17,7 @@ const MFA_FLAG = 'mfa-setup-in-progress';
 
 export default function DeviceSetup() {
   const { me, refresh } = useAuth();
+  const { sec } = useDeviceSecurity();
   const qc = useQueryClient();
   const [label, setLabel] = useState(`${me?.last_name?.trim() || 'My'}'s Phone`);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -34,7 +37,9 @@ export default function DeviceSetup() {
   const pending = devices.find((d) => d.status === 'pending');
 
   const register = async () => {
-    setBusy(true); setMsg(null);
+    setMsg(null);
+    if (sec?.level === 'none') { setMsg({ ok: false, text: "Set up a screen lock (fingerprint, face, PIN or password) in your phone settings first." }); return; }
+    setBusy(true);
     try {
       const { data: optionsJSON } = await api.post('/staff/device/register/options/');
       const credential = await createPasskey(optionsJSON); // biometric prompt
@@ -44,7 +49,7 @@ export default function DeviceSetup() {
       refresh();
       qc.invalidateQueries({ queryKey: ['devices'] });
     } catch (e: any) {
-      setMsg({ ok: false, text: e?.code === 'CANCELLED' ? 'Setup was cancelled.' : e?.code?.startsWith?.('PASSKEY') ? e.message : errorOf(e).message });
+      setMsg({ ok: false, text: e?.code === 'CANCELLED' ? 'Setup was cancelled.' : e?.code?.startsWith?.('PASSKEY') ? passkeyMessage(e) : errorOf(e).message });
     } finally { setBusy(false); }
   };
 
@@ -132,9 +137,9 @@ export default function DeviceSetup() {
             <Text className="mt-3 text-[18px] font-extrabold text-ink">Register this phone</Text>
             <Muted className="mt-1 text-center">Your fingerprint or face stays on your device. NASRDA only stores a secure key that proves it is this device.</Muted>
           </View>
-          {!passkeysSupported() ? <Alert tone="info">Biometric passkeys need the installed NASRDA app build and aren't available in Expo Go.</Alert> : null}
+          {!passkeysLinked() ? <Alert tone="warn">Passkeys don't work in Expo Go. Install the NASRDA development build (npx expo run:android / run:ios) to register this device.</Alert> : <SecurityNotice sec={sec} />}
           <TextField label="Device name" value={label} onChangeText={setLabel} />
-          <Button className="mt-4" icon="finger-print" title={busy ? 'Registering…' : 'Register this device'} loading={busy} disabled={!label.trim()} onPress={register} />
+          <Button className="mt-4" icon="finger-print" title={busy ? 'Registering…' : 'Register this device'} loading={busy} disabled={!label.trim() || !passkeysLinked() || sec?.level === 'none'} onPress={register} />
         </Card>
       )}
 

@@ -2,7 +2,7 @@ import { NativeModules, Platform } from 'react-native';
 import { Passkey } from 'react-native-passkey';
 
 /**
- * Thin wrapper over native passkeys (WebAuthn via Face ID / fingerprint / device passcode).
+ * Thin wrapper over native passkeys (WebAuthn via Face ID / fingerprint). Currently dormant: see lib/config.ts.
  * The server already emits standard WebAuthn JSON, so we hand it straight to the OS and
  * return the standard result.
  *
@@ -38,10 +38,10 @@ export function translatePasskeyError(e: any): PasskeyFailure {
     return { code: 'PASSKEY_NOT_LINKED', message: 'Passkeys are not available in this build. Install the NASRDA app build (not Expo Go) and try again.', detail };
 
   if (kind === 'NotSupported')
-    return { code: 'PASSKEY_UNSUPPORTED', message: 'This phone does not support passkeys. It needs iOS 16+ or Android 9+ with a Google account and a screen lock.', detail };
+    return { code: 'PASSKEY_UNSUPPORTED', message: 'This phone does not support passkeys. It needs iOS 16+ or Android 9+ with a Google account.', detail };
 
   if (kind === 'NoCreateOption')
-    return { code: 'PASSKEY_NO_LOCK', message: 'No passkey provider is available. Set a screen lock (fingerprint, face, PIN or password) in your phone settings, and on Android make sure you are signed in to a Google account.', detail };
+    return { code: 'PASSKEY_NO_LOCK', message: 'No passkey provider is available. Set up Face ID or a fingerprint in your phone settings, and on Android make sure you are signed in to a Google account.', detail };
 
   if (kind === 'NoCredentials')
     return { code: 'PASSKEY_NO_CREDENTIAL', message: 'No passkey for this account was found on this phone. Register this device again from Account → Device & biometrics.', detail };
@@ -59,7 +59,7 @@ export function translatePasskeyError(e: any): PasskeyFailure {
   if (kind === 'BadConfiguration' || /rp id|relying party|assetlinks|associated domain|origin/i.test(msg))
     return { code: 'PASSKEY_CONFIG', message: 'This app build is not linked to the attendance domain yet, so the phone refused the passkey. The server team must publish the app-link file for this app.', detail };
 
-  return { code: 'PASSKEY_FAILED', message: 'Biometric or passcode verification failed. Please try again.', detail };
+  return { code: 'PASSKEY_FAILED', message: 'Biometric verification failed. Please try again.', detail };
 }
 
 /** Message shown to the person (includes technical detail when the cause is not a user action). */

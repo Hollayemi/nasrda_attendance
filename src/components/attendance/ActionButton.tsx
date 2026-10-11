@@ -2,12 +2,12 @@ import { useEffect } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { Icon } from '@/components/ui';
+import { Icon, type IconName } from '@/components/ui';
 
-type Props = { kind: 'in' | 'out'; busyLabel?: string; disabled?: boolean; onPress: () => void };
+type Props = { kind: 'in' | 'out'; busyLabel?: string; disabled?: boolean; icon?: IconName; onPress: () => void };
 
 /** The big circular Check-in / Check-out button with a soft pulsing halo while it is actionable. */
-export function ActionButton({ kind, busyLabel, disabled, onPress }: Props) {
+export function ActionButton({ kind, busyLabel, disabled, icon, onPress }: Props) {
   const pulse = useSharedValue(0);
   const active = !disabled && !busyLabel;
   useEffect(() => {
@@ -35,7 +35,7 @@ export function ActionButton({ kind, busyLabel, disabled, onPress }: Props) {
           </>
         ) : (
           <>
-            <Icon name={kind === 'in' ? 'finger-print' : 'log-out-outline'} size={46} color="#fff" />
+            <Icon name={kind === 'in' ? (icon ?? 'finger-print') : 'log-out-outline'} size={46} color="#fff" />
             <Text className="mt-1.5 text-[21px] font-extrabold tracking-wide text-white">{kind === 'in' ? 'CHECK IN' : 'CHECK OUT'}</Text>
           </>
         )}

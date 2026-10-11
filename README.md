@@ -67,10 +67,17 @@ Android mock-location refusal, refresh on app foreground.
   it reads from `Set-Cookie` (see `src/lib/api.ts`). If your server hides that header from clients, this is the
   one place to adapt.
 - **Maps:** Android release builds need a Google Maps API key (`android.config.googleMaps.apiKey` in `app.json`).
-- **Biometrics and passcode:** check-in uses the phone's own prompt. Face ID / Touch ID on iPhone; fingerprint or face
-  unlock on Android; if the phone has no biometrics (or they fail), the OS asks for the device passcode/PIN instead.
-  A phone with **no screen lock at all** is blocked with a message and an "Open phone settings" button.
-  An app-only PIN that skips the passkey is deliberately not included: the server requires the passkey proof.
-- **Error messages:** passkey failures now show a plain-language reason plus a short technical code in brackets
+- **Biometric check-in (Face ID / fingerprint):** every check-in and check-out asks the phone for Face ID
+  (or Touch ID) on iPhone and fingerprint on Android, via `expo-local-authentication`, with no passcode option.
+  A phone with no sensor, or nothing enrolled, is blocked with a message and an "Open phone settings" button.
+  Account → "Face ID & fingerprint" has a **Test** button to confirm it works on a given phone.
+  Android accepts strong biometrics only (fingerprint, 3D face). Face ID needs the installed development
+  build; Expo Go cannot show it reliably.
+- **This check runs on the phone.** The server cannot independently verify it, unlike a passkey. In Admin →
+  System settings, "Require biometric passkey" must stay **off** while passkeys are dormant.
+- **Passkeys are dormant.** The code is kept but disabled by `PASSKEY_ENABLED` in `src/lib/config.ts`.
+  To turn it on later: set `EXPO_PUBLIC_PASSKEY_ENABLED=true` in `.env`, make a new build, and turn on
+  "Require biometric passkey" in System settings.
+- **Error messages (passkeys):** passkey failures show a plain-language reason plus a short technical code in brackets
   (e.g. `[BadConfiguration — ...]`). Send that bracketed text when reporting a problem.
 - Light theme only, matching the web app.

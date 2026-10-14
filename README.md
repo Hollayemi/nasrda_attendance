@@ -81,3 +81,14 @@ Android mock-location refusal, refresh on app foreground.
 - **Error messages (passkeys):** passkey failures show a plain-language reason plus a short technical code in brackets
   (e.g. `[BadConfiguration — ...]`). Send that bracketed text when reporting a problem.
 - Light theme only, matching the web app.
+
+
+https://github.com/Hollayemi/nasrda_attendance/tree/main
+https://github.com/mzaraf/nasrda-attendance.git
+
+
+i want you to watch on the branch, i want you to make the biometric not be testing, i want it to work on the pain for readiness. i want proper device setup registration and checkin when registered.
+
+check the device setup to know what to do, check the web frontend to know the api used.
+
+push to new branch

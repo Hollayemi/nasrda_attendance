@@ -36,6 +36,7 @@ export async function getBiometricStatus(): Promise<BiometricStatus> {
       : kind === 'both' ? 'fingerprint or face'
       : kind === 'face' ? 'face unlock'
       : 'fingerprint';
+      console.log({ hardware, enrolled, ready: hardware && enrolled, kind, method })
     return { hardware, enrolled, ready: hardware && enrolled, kind, method };
   } catch {
     return FALLBACK;
@@ -75,6 +76,9 @@ export async function verifyBiometric(reason = 'Confirm it is you to mark attend
     biometricsSecurityLevel: 'strong',
     requireConfirmation: false,
   });
+
+  console.log(res)
+
   if (res.success) return;
   const code = res.error ?? 'unknown';
   throw {

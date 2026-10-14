@@ -11,10 +11,14 @@
     "ios": {
       "bundleIdentifier": "ng.gov.nasrda.attendance",
       "supportsTablet": true,
-      "associatedDomains": ["webcredentials:attendance.bots.ng"],
+      "associatedDomains": [
+        "webcredentials:attendance.bots.ng",
+        "webcredentials:attendance.bots.ng"
+      ],
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "NASRDA Attendance uses your location to confirm you are within an authorised campus when you check in or out.",
-        "NSFaceIDUsageDescription": "Face ID verifies that it is really you when you mark attendance."
+        "NSFaceIDUsageDescription": "Face ID verifies that it is really you when you mark attendance.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -23,16 +27,50 @@
         "backgroundColor": "#19297D",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "USE_BIOMETRIC"],
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "USE_BIOMETRIC",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      ["expo-local-authentication", { "faceIDPermission": "Face ID verifies that it is really you when you mark attendance." }],
-      ["expo-splash-screen", { "backgroundColor": "#19297D", "image": "./assets/images/splash-icon.png", "imageWidth": 140 }],
-      ["expo-location", { "locationWhenInUsePermission": "NASRDA Attendance uses your location to confirm you are within an authorised campus when you check in or out." }]
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Face ID verifies that it is really you when you mark attendance."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#19297D",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 140
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "NASRDA Attendance uses your location to confirm you are within an authorised campus when you check in or out."
+        }
+      ]
     ],
-    "experiments": { "typedRoutes": true, "reactCompiler": true }
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0866dd97-68ee-4a54-a851-037049e1b0bb"
+      }
+    }
   }
 }

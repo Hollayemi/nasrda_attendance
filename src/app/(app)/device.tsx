@@ -45,6 +45,7 @@ export default function DeviceSetup() {
       await verifyBiometric('Test ' + (bio?.method ?? 'biometrics'));
       setMsg({ ok: true, text: `${bio?.method ?? 'Biometrics'} is working on this phone. You're ready to mark attendance.` });
     } catch (e: any) {
+      console.log(e)
       setMsg({ ok: false, text: e?.code === 'CANCELLED' ? 'Test was cancelled.' : e?.message ?? 'Biometric verification failed. Please try again.' });
     } finally { setTesting(false); }
   };

@@ -66,13 +66,13 @@ Android mock-location refusal, refresh on app foreground.
 - **Maps:** Android release builds need a Google Maps API key (`android.config.googleMaps.apiKey` in `app.json`).
 - **Face verification (same as the web app):** attendance uses live camera face verification, not Face ID,
   fingerprint or passkeys.
-  - *Set up* (Account → Face verification): three front-camera photos go to `POST /staff/face/enroll/` with a random
+  - *Set up* (Account → Face verification): the screen shows three poses but only the first front-camera photo is sent to `POST /staff/face/enroll/` with a random
     device token (kept in the phone's secure storage) and the phone model as its label. This also binds the phone.
-  - *Check in / out*: `POST /attendance/face/challenge/` returns three randomised steps, the three photos go to
+  - *Check in / out*: `POST /attendance/face/challenge/` returns a single step, one photo goes to
     `POST /attendance/face/verify/`, and the one-use `verification_id` is sent with the check-in/out request together
     with the device token. The server does all the matching and liveness checks; the phone keeps no photos.
-  - Removing a phone sends `POST /staff/devices/<id>/remove-request/` for administrator approval; admins can
-    "Reset face" for a staff member (Admin → Staff).
-  - Admin → System settings controls "Require face verification" and "Require an approved phone".
+  - Removing a phone sends `POST /staff/devices/<id>/remove-request/` for administrator approval; approval also
+    removes the face verification, so the staff member sets up again.
+  - Admin → System settings controls "Require face verification" and "Require a registered device".
   - The camera permission is requested on first use; if refused, the screen explains how to turn it on.
 - Light theme only, matching the web app.

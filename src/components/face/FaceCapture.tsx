@@ -19,11 +19,12 @@ type Props = {
 const ENROL_STEPS = ['Look straight at the camera', 'Turn your head slightly left', 'Turn your head slightly right'];
 
 /**
- * Live three-step face capture, the same flow the web app uses:
- *  - enrol: three photos are sent to /staff/face/enroll/ with this phone's device token
- *  - verify: the server issues a challenge (randomised steps); three photos go to /attendance/face/verify/
+ * Live face capture, matching the web app:
+ *  - enrol: the screen walks through three poses, but only the FIRST photo (looking straight ahead) is sent to
+ *    /staff/face/enroll/ with this phone's device token. The other two steps are just for show.
+ *  - verify: the server issues a challenge with a single step; that one photo goes to /attendance/face/verify/
  *    which returns a one-use verification id that the check-in / check-out request carries.
- * The photos are only used to build / compare the encrypted template and are not stored on the phone.
+ * The photo is only used to build / compare the encrypted template and is not stored on the phone.
  */
 export function FaceCapture({ visible, mode, action, onComplete, onClose }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
@@ -31,7 +32,8 @@ export function FaceCapture({ visible, mode, action, onComplete, onClose }: Prop
   const [ready, setReady] = useState(false);
   const [steps, setSteps] = useState<string[]>(mode === 'enrol' ? ENROL_STEPS : []);
   const [challengeId, setChallengeId] = useState('');
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<string[]>([]); // only real photos that will be uploaded
+  const [taken, setTaken] = useState(0); // steps completed on screen (can exceed images.length when enrolling)
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -40,7 +42,7 @@ export function FaceCapture({ visible, mode, action, onComplete, onClose }: Prop
   useEffect(() => {
     if (!visible) return;
     let alive = true;
-    setImages([]); setError(''); setReady(false); setChallengeId('');
+    setImages([]); setTaken(0); setError(''); setReady(false); setChallengeId('');
     setSteps(mode === 'enrol' ? ENROL_STEPS : []);
     if (mode === 'verify') {
       setLoading(true);
@@ -52,13 +54,27 @@ export function FaceCapture({ visible, mode, action, onComplete, onClose }: Prop
     return () => { alive = false; };
   }, [visible, mode, action]);
 
-  const step = steps[images.length] ?? 'Preparing camera…';
-  const last = images.length === 2;
+  // Enrolment shows three poses (only the first is uploaded); verification follows the server's challenge.
+  const total = mode === 'enrol' ? ENROL_STEPS.length : Math.max(steps.length, 1);
+  const step = steps[taken] ?? 'Preparing camera…';
+  const last = taken === total - 1;
 
   const capture = async () => {
     if (!camera.current || !ready) return setError('Camera is still starting. Please wait.');
     setError(''); setBusy(true);
     try {
+      // Enrolment steps 2 and 3 are visual only: advance without taking or sending another photo.
+      if (mode === 'enrol' && taken > 0) {
+        await new Promise((r) => setTimeout(r, 450));
+        Haptics.selectionAsync().catch(() => {});
+        const nextTaken = taken + 1;
+        setTaken(nextTaken);
+        if (nextTaken < total) return;
+        await api.post('/staff/face/enroll/', { images: [images[0]], device_token: await deviceToken(), label: deviceLabel() });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        onComplete();
+        return;
+      }
       const shot = await camera.current.takePictureAsync({ quality: 0.9, shutterSound: false, skipProcessing: false });
       // Keep uploads small (the web app sends ~720px frames).
       const small = await manipulateAsync(shot.uri, [{ resize: { width: 720 } }], { compress: 0.88, format: SaveFormat.JPEG, base64: true });
@@ -66,20 +82,15 @@ export function FaceCapture({ visible, mode, action, onComplete, onClose }: Prop
       const next = [...images, `data:image/jpeg;base64,${small.base64}`];
       Haptics.selectionAsync().catch(() => {});
       setImages(next);
-      if (next.length < 3) return;
+      setTaken(1);
+      if (mode === 'enrol') return; // two more poses to go (visual only); the upload happens after the last one
 
-      if (mode === 'enrol') {
-        await api.post('/staff/face/enroll/', { images: next, device_token: await deviceToken(), label: deviceLabel() });
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-        onComplete();
-      } else {
-        const { data } = await api.post('/attendance/face/verify/', { challenge_id: challengeId, images: next });
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-        onComplete(data.verification_id);
-      }
+      const { data } = await api.post('/attendance/face/verify/', { challenge_id: challengeId, images: next });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      onComplete(data.verification_id);
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
-      setImages([]); setError(errorOf(e).message);
+      setImages([]); setTaken(0); setError(errorOf(e).message);
       // A failed verification consumes the challenge: fetch a new one so the person can retry straight away.
       if (mode === 'verify') {
         api.post('/attendance/face/challenge/', { action }).then(({ data }) => { setSteps(data.steps); setChallengeId(data.challenge_id); }).catch(() => {});
@@ -96,12 +107,12 @@ export function FaceCapture({ visible, mode, action, onComplete, onClose }: Prop
         <Text className="text-[22px] font-extrabold text-ink">{title}</Text>
         <Muted className="mt-1">
           {mode === 'enrol'
-            ? 'Your camera captures are only used to create an encrypted facial template. Photos are not kept.'
-            : 'Complete the three live camera steps. Do not use a photograph, a video or another screen.'}
+            ? 'Your camera capture is only used to create an encrypted facial template. Photos are not kept.'
+            : 'Look straight at the camera. Do not use a photograph, a video or another screen.'}
         </Muted>
 
         <View className="mt-5 items-center">
-          <View style={{ width: 300, height: 300, borderRadius: 150, overflow: 'hidden', backgroundColor: '#0B1220', borderWidth: 4, borderColor: images.length === 3 ? colors.green : colors.navy }}>
+          <View style={{ width: 300, height: 300, borderRadius: 150, overflow: 'hidden', backgroundColor: '#0B1220', borderWidth: 4, borderColor: taken >= total ? colors.green : colors.navy }}>
             {permission?.granted && visible ? (
               <CameraView ref={camera} style={{ flex: 1 }} facing="front" onCameraReady={() => setReady(true)} />
             ) : (
@@ -111,13 +122,13 @@ export function FaceCapture({ visible, mode, action, onComplete, onClose }: Prop
             )}
           </View>
           <View className="mt-4 flex-row gap-2">
-            {[0, 1, 2].map((i) => (
-              <View key={i} className="h-2.5 w-10 rounded-full" style={{ backgroundColor: i < images.length ? colors.green : i === images.length ? colors.navy : '#D5DBE5' }} />
+            {Array.from({ length: total }, (_, i) => (
+              <View key={i} className="h-2.5 w-10 rounded-full" style={{ backgroundColor: i < taken ? colors.green : i === taken ? colors.navy : '#D5DBE5' }} />
             ))}
           </View>
         </View>
 
-        <Text className="mt-4 text-center text-[16px] text-ink"><Text className="font-extrabold">Step {Math.min(images.length + 1, 3)} of 3: </Text>{loading ? 'Preparing…' : step}</Text>
+        <Text className="mt-4 text-center text-[16px] text-ink">{total > 1 ? <Text className="font-extrabold">Step {Math.min(taken + 1, total)} of {total}: </Text> : <Text className="font-extrabold">Live camera check: </Text>}{loading ? 'Preparing…' : step}</Text>
 
         {denied ? (
           <View className="mt-3">
@@ -132,7 +143,7 @@ export function FaceCapture({ visible, mode, action, onComplete, onClose }: Prop
         <View className="flex-1" />
         <ButtonRow>
           <Button variant="secondary" title="Cancel" disabled={busy} onPress={onClose} />
-          <Button icon="camera-outline" title={busy ? 'Please wait…' : last ? 'Verify now' : 'Capture photo'} loading={busy}
+          <Button icon="camera-outline" title={busy ? 'Please wait…' : mode === 'verify' ? 'Capture and verify' : last ? 'Finish setup' : 'Capture photo'} loading={busy}
             disabled={busy || loading || !steps.length || !ready || !permission?.granted} onPress={capture} />
         </ButtonRow>
       </View>

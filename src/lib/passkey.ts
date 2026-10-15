@@ -2,7 +2,7 @@ import { NativeModules, Platform } from 'react-native';
 import { Passkey } from 'react-native-passkey';
 
 /**
- * Thin wrapper over native passkeys (WebAuthn via Face ID / fingerprint). Currently dormant: see lib/config.ts.
+ * Thin wrapper over native passkeys (WebAuthn via Face ID / fingerprint).
  * The server already emits standard WebAuthn JSON, so we hand it straight to the OS and
  * return the standard result.
  *

@@ -10,8 +10,6 @@ import { fmtDate } from '@/lib/format';
 import { createPasskey, passkeyMessage, passkeysLinked } from '@/lib/passkey';
 import { useBiometric } from '@/hooks/useBiometric';
 import { BiometricNotice } from '@/components/attendance/BiometricNotice';
-import { verifyBiometric } from '@/lib/biometric';
-import { PASSKEY_ENABLED } from '@/lib/config';
 import { colors } from '@/theme';
 import type { Device } from '@/types';
 
@@ -20,7 +18,6 @@ const MFA_FLAG = 'mfa-setup-in-progress';
 export default function DeviceSetup() {
   const { me, refresh } = useAuth();
   const { status: bio } = useBiometric();
-  const [testing, setTesting] = useState(false);
   const qc = useQueryClient();
   const [label, setLabel] = useState(`${me?.last_name?.trim() || 'My'}'s Phone`);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -38,17 +35,6 @@ export default function DeviceSetup() {
   const { data: devices = [], isLoading } = useQuery({ queryKey: ['devices'], queryFn: () => api.get('/staff/devices/').then((r) => r.data as Device[]) });
   const active = devices.find((d) => d.status === 'active');
   const pending = devices.find((d) => d.status === 'pending');
-
-  const testBiometric = async () => {
-    setTesting(true); setMsg(null);
-    try {
-      await verifyBiometric('Test ' + (bio?.method ?? 'biometrics'));
-      setMsg({ ok: true, text: `${bio?.method ?? 'Biometrics'} is working on this phone. You're ready to mark attendance.` });
-    } catch (e: any) {
-      console.log(e)
-      setMsg({ ok: false, text: e?.code === 'CANCELLED' ? 'Test was cancelled.' : e?.message ?? 'Biometric verification failed. Please try again.' });
-    } finally { setTesting(false); }
-  };
 
   const register = async () => {
     setMsg(null);
@@ -108,20 +94,7 @@ export default function DeviceSetup() {
     <Screen>
       {msg ? <Alert tone={msg.ok ? 'success' : 'error'} className="mt-2">{msg.text}</Alert> : null}
 
-      {!PASSKEY_ENABLED ? (
-        <Card className="mt-2">
-          <View className="items-center py-2">
-            <View className="h-16 w-16 items-center justify-center rounded-full bg-navy-50">
-              <Icon name={bio?.kind === 'face' ? 'scan-outline' : 'finger-print'} size={34} color={colors.navy} />
-            </View>
-            <Text className="mt-3 text-[18px] font-extrabold text-ink">{bio?.method ? `Verify with ${bio.method}` : 'Biometric verification'}</Text>
-            <Muted className="mt-1 text-center">Your Face ID or fingerprint is checked on this phone each time you check in or out. It is never sent to NASRDA.</Muted>
-            {bio ? <View className="mt-3"><Pill label={bio.ready ? 'READY' : bio.hardware ? 'SET UP NEEDED' : 'NOT AVAILABLE'} tone={bio.ready ? 'green' : bio.hardware ? 'amber' : 'red'} /></View> : null}
-          </View>
-          <BiometricNotice status={bio} />
-          <Button className="mt-3" variant="secondary" icon={bio?.kind === 'face' ? 'scan-outline' : 'finger-print'} title={testing ? 'Waiting…' : `Test ${bio?.method ?? 'biometrics'}`} loading={testing} disabled={!bio?.ready} onPress={testBiometric} />
-        </Card>
-      ) : active ? (
+      {active ? (
         <Card className="mt-2">
           <View className="flex-row items-center gap-3">
             <View className="h-12 w-12 items-center justify-center rounded-2xl bg-tint-green"><Icon name="phone-portrait-outline" size={24} color={colors.green} /></View>
@@ -163,9 +136,10 @@ export default function DeviceSetup() {
             <Text className="mt-3 text-[18px] font-extrabold text-ink">Register this phone</Text>
             <Muted className="mt-1 text-center">Your fingerprint or face stays on your device. NASRDA only stores a secure key that proves it is this device.</Muted>
           </View>
+          <BiometricNotice status={bio} />
           {!passkeysLinked() ? <Alert tone="warn">Passkeys don't work in Expo Go. Install the NASRDA development build (npx expo run:android / run:ios) to register this device.</Alert> : null}
           <TextField label="Device name" value={label} onChangeText={setLabel} />
-          <Button className="mt-4" icon="finger-print" title={busy ? 'Registering…' : 'Register this device'} loading={busy} disabled={!label.trim() || !passkeysLinked()} onPress={register} />
+          <Button className="mt-4" icon="finger-print" title={busy ? 'Registering…' : 'Register this device'} loading={busy} disabled={!label.trim() || !passkeysLinked() || !bio?.ready} onPress={register} />
         </Card>
       )}
 

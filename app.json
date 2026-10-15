@@ -12,7 +12,6 @@
       "bundleIdentifier": "ng.gov.nasrda.attendance",
       "supportsTablet": true,
       "associatedDomains": [
-        "webcredentials:attendance.bots.ng",
         "webcredentials:attendance.bots.ng"
       ],
       "infoPlist": {

@@ -35,7 +35,7 @@ function Inner() {
 
   return (
     <Screen>
-      <Muted className="mt-1">Changes take effect immediately across attendance, location checks, and device security.</Muted>
+      <Muted className="mt-1">Changes take effect immediately across attendance, location checks, and face-verification security.</Muted>
       <Card className="mt-3">
         <Text className="text-[17px] font-extrabold text-ink">Working hours</Text>
         <View className="flex-row gap-3">
@@ -53,10 +53,10 @@ function Inner() {
         <View className="flex-row gap-3">{num('min_accuracy_m', 'GPS accuracy (m)', 'flex-1')}{num('max_speed_mps', 'Max speed (m/s)', 'flex-1')}</View>
       </Card>
       <Card className="mt-3">
-        <Text className="text-[17px] font-extrabold text-ink">Device security</Text>
-        {num('max_devices', 'Maximum registered devices per staff')}
-        <SwitchRow label="Require biometric passkey" hint="Staff must verify with fingerprint or face to mark attendance." value={form.require_passkey} onChange={(v) => setForm({ ...form, require_passkey: v })} />
-        <SwitchRow label="Require approval for new devices" hint="An administrator must approve each newly registered device." value={form.device_approval_required} onChange={(v) => setForm({ ...form, device_approval_required: v })} />
+        <Text className="text-[17px] font-extrabold text-ink">Face and approved-device verification</Text>
+        <SwitchRow label="Require face verification for attendance" hint="Staff must verify their face with the camera to check in or out." value={form.require_face_verification} onChange={(v) => setForm({ ...form, require_face_verification: v })} />
+        <SwitchRow label="Require an approved phone" hint="Attendance can only be recorded from the phone bound to the staff member's face verification." value={form.require_approved_device} onChange={(v) => setForm({ ...form, require_approved_device: v })} />
+        {num('max_devices', 'Maximum approved devices per staff')}
       </Card>
       {msg ? <Alert tone={msg.ok ? 'success' : 'error'} className="mt-3">{msg.text}</Alert> : null}
       <Button className="mt-4" icon="save-outline" title="Save settings" loading={saving} onPress={save} />

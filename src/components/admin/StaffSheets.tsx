@@ -125,6 +125,11 @@ export function EditStaffSheet({ staff, onClose, onSaved }: { staff: Staff | nul
     onSuccess: (d) => setMsg({ ok: true, text: `${d.revoked} device(s) revoked.` }),
     onError: (e) => setMsg({ ok: false, text: errorOf(e).message }),
   });
+  const resetFace = useMutation({
+    mutationFn: () => api.post(`/admin/staff/${staff!.id}/reset_face/`),
+    onSuccess: () => setMsg({ ok: true, text: 'Face verification reset. The staff member must enrol again.' }),
+    onError: (e) => setMsg({ ok: false, text: errorOf(e).message }),
+  });
   const toggle = useMutation({
     mutationFn: () => api.post(`/admin/staff/${staff!.id}/${staff!.is_active ? 'deactivate' : 'activate'}/`),
     onSuccess: () => { onSaved(); close(); },
@@ -146,8 +151,10 @@ export function EditStaffSheet({ staff, onClose, onSaved }: { staff: Staff | nul
       <ButtonRow>
         <Button variant="secondary" size="sm" icon="key-outline" title="Reset password" loading={resetPassword.isPending}
           onPress={() => confirm('Reset password?', `Generate a new temporary password for ${staff?.first_name}?`, 'Reset', () => resetPassword.mutate(), false)} />
+        <Button variant="secondary" size="sm" icon="scan-outline" title="Reset face" loading={resetFace.isPending}
+          onPress={() => confirm('Reset face verification?', `${staff?.first_name} will need to enrol their face again before attendance can be recorded.`, 'Reset', () => resetFace.mutate())} />
         <Button variant="secondary" size="sm" icon="phone-portrait-outline" title="Reset devices" loading={resetDevices.isPending}
-          onPress={() => confirm('Reset devices?', `Revoke all of ${staff?.first_name}'s registered devices? They'll need to register a new one to check in.`, 'Revoke', () => resetDevices.mutate())} />
+          onPress={() => confirm('Reset devices?', `Revoke all of ${staff?.first_name}'s approved phones? They'll need to set up face verification on a phone again to check in.`, 'Revoke', () => resetDevices.mutate())} />
       </ButtonRow>
       <Button className="mt-2.5" variant={staff?.is_active ? 'danger' : 'success'} icon={staff?.is_active ? 'person-remove-outline' : 'person-add-outline'}
         title={staff?.is_active ? 'Deactivate staff' : 'Activate staff'} loading={toggle.isPending}

@@ -3,7 +3,7 @@ export type Me = {
   department: string | null; can_admin: boolean; can_manage_staff: boolean; can_view_staff: boolean; can_access_staff: boolean;
   can_approve: boolean; can_manage_devices: boolean; can_access_approvals: boolean; can_export_reports: boolean;
   can_view_audit: boolean; can_manage_geofence: boolean; can_manage_roles: boolean; can_review_department_requests: boolean;
-  has_device: boolean; require_passkey: boolean; mfa_enabled: boolean; mfa_configured: boolean;
+  face_enrolled: boolean; require_face_verification: boolean; has_approved_device: boolean; require_approved_device: boolean; mfa_enabled: boolean; mfa_configured: boolean;
 };
 
 export type AttendanceRecord = {
@@ -19,6 +19,7 @@ export type Today = {
 export type Activity = { id: number; category: number; title: string; description: string; start_time: string; end_time: string; output: string };
 export type Category = { id: number; name: string };
 
+export type FaceStatus = { status: 'not_enrolled' | 'active' | 'revoked'; enrolled_at: string | null; last_verified_at: string | null };
 export type Device = { id: number; label: string; status: 'pending' | 'active' | 'revoked'; registered_at: string; last_seen_at: string | null; removal_pending: boolean };
 
 export type ApprovalState = 'pending' | 'approved' | 'rejected' | 'recalled';
@@ -42,5 +43,5 @@ export type Staff = {
 export type Settings = {
   work_start: string; work_end: string; checkin_late_after: string; checkin_closes_after: string; checkout_allowed_after: string;
   nursing_mother_checkout_after: string; grace_minutes: number; overtime_after_minutes: number; min_accuracy_m: number;
-  max_speed_mps: number; max_devices: number; require_passkey: boolean; device_approval_required: boolean;
+  max_speed_mps: number; max_devices: number; require_face_verification: boolean; require_approved_device: boolean;
 };

@@ -11,10 +11,9 @@
     "ios": {
       "bundleIdentifier": "ng.gov.nasrda.attendance",
       "supportsTablet": true,
-      "associatedDomains": ["webcredentials:attendance.bots.ng"],
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "NASRDA Attendance uses your location to confirm you are within an authorised campus when you check in or out.",
-        "NSFaceIDUsageDescription": "Face ID verifies that it is really you when you mark attendance."
+        "NSCameraUsageDescription": "NASRDA Attendance uses the front camera to verify your face when you check in or out."
       }
     },
     "android": {
@@ -23,16 +22,42 @@
         "backgroundColor": "#19297D",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "USE_BIOMETRIC"],
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      ["expo-local-authentication", { "faceIDPermission": "Face ID verifies that it is really you when you mark attendance." }],
-      ["expo-splash-screen", { "backgroundColor": "#19297D", "image": "./assets/images/splash-icon.png", "imageWidth": 140 }],
-      ["expo-location", { "locationWhenInUsePermission": "NASRDA Attendance uses your location to confirm you are within an authorised campus when you check in or out." }]
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#19297D",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 140
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "NASRDA Attendance uses your location to confirm you are within an authorised campus when you check in or out."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "NASRDA Attendance uses the front camera to verify your face when you check in or out.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ]
     ],
-    "experiments": { "typedRoutes": true, "reactCompiler": true }
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
   }
 }

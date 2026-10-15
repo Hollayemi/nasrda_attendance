@@ -9,14 +9,11 @@ Data: TanStack Query + Axios against the existing `/api` backend, unchanged.
 ```bash
 npm install
 cp .env.example .env        # set EXPO_PUBLIC_API_URL if not using https://attendance.bots.ng
-npx expo start              # Expo Go works for everything except biometric passkeys
+npx expo start              # the camera works in Expo Go; a development build is recommended for release testing
 ```
 
-Biometric check-in uses native passkeys (`react-native-passkey`), which need a **development build**:
-
 ```bash
-npx expo prebuild
-npx expo run:android   # or run:ios
+npx expo run:android   # or run:ios, to test a native build
 ```
 
 ## Structure
@@ -29,7 +26,8 @@ src/
     (app)/
       _layout.tsx           Stack for pushed screens
       (tabs)/               Home · History · Requests · Admin (permission-gated) · Account
-      device.tsx            Passkey registration, device removal, authenticator MFA
+      face.tsx              Face enrolment, phone registration, phone-removal request
+      device.tsx            Authenticator MFA
       password.tsx
       admin/                approvals, staff, departments, holidays, roles,
                             settings, reports, audit, geofence (map)
@@ -37,8 +35,9 @@ src/
     ui/                     Design system: Button, Card, TextField, Select, DateField,
                             Sheet, Pill, Alert, ListRow, Segmented, …
     attendance/             ActionButton (check-in/out), ActivitySheet
+    face/                   FaceCapture (live 3-step camera capture)
     admin/                  Staff form / import sheets
-  lib/                      api (CSRF + errors), auth, format (Lagos time), geo, passkey, files
+  lib/                      api (CSRF + errors), auth, format (Lagos time), geo, device (device token), files
   hooks/  types/  theme.ts  global.css
 ```
 
@@ -50,7 +49,8 @@ src/
 | Home / check-in / ActivitySheet | `(tabs)/index.tsx`, `ActivitySheet` |
 | History | `(tabs)/history.tsx` (month stepper) |
 | Requests (leave / official duty) | `(tabs)/requests.tsx` (bottom-sheet form) |
-| DeviceSetup, Profile | `device.tsx`, `(tabs)/account.tsx`, `password.tsx` |
+| FaceSetup | `face.tsx` |
+| DeviceSetup (MFA), Profile | `device.tsx`, `(tabs)/account.tsx`, `password.tsx` |
 | Admin pages | `(tabs)/admin.tsx` hub + `admin/*` |
 
 Mobile-specific touches: haptics, pull-to-refresh, native pickers, bottom sheets,
@@ -60,24 +60,19 @@ Android mock-location refusal, refresh on app foreground.
 ## Things to know
 
 - **Not yet run on a device.** It type-checks and bundles for Android and iOS; please smoke-test on hardware.
-- **Passkeys:** `app.json` declares `webcredentials:attendance.bots.ng`. Passkeys only work once the
-  domain publishes the matching `apple-app-site-association` / `assetlinks.json` for this app's bundle ID and
-  signing key, and the server accepts the native origin. In Expo Go the UI explains this instead of crashing.
 - **Session/CSRF:** the app keeps the Django session in the native cookie jar and echoes the `csrftoken`
   it reads from `Set-Cookie` (see `src/lib/api.ts`). If your server hides that header from clients, this is the
   one place to adapt.
 - **Maps:** Android release builds need a Google Maps API key (`android.config.googleMaps.apiKey` in `app.json`).
-- **Biometric check-in (Face ID / fingerprint):** every check-in and check-out asks the phone for Face ID
-  (or Touch ID) on iPhone and fingerprint on Android, via `expo-local-authentication`, with no passcode option.
-  A phone with no sensor, or nothing enrolled, is blocked with a message and an "Open phone settings" button.
-  Account → "Face ID & fingerprint" has a **Test** button to confirm it works on a given phone.
-  Android accepts strong biometrics only (fingerprint, 3D face). Face ID needs the installed development
-  build; Expo Go cannot show it reliably.
-- **This check runs on the phone.** The server cannot independently verify it, unlike a passkey. In Admin →
-  System settings, "Require biometric passkey" must stay **off** while passkeys are dormant.
-- **Passkeys are dormant.** The code is kept but disabled by `PASSKEY_ENABLED` in `src/lib/config.ts`.
-  To turn it on later: set `EXPO_PUBLIC_PASSKEY_ENABLED=true` in `.env`, make a new build, and turn on
-  "Require biometric passkey" in System settings.
-- **Error messages (passkeys):** passkey failures show a plain-language reason plus a short technical code in brackets
-  (e.g. `[BadConfiguration — ...]`). Send that bracketed text when reporting a problem.
+- **Face verification (same as the web app):** attendance uses live camera face verification, not Face ID,
+  fingerprint or passkeys.
+  - *Set up* (Account → Face verification): three front-camera photos go to `POST /staff/face/enroll/` with a random
+    device token (kept in the phone's secure storage) and the phone model as its label. This also binds the phone.
+  - *Check in / out*: `POST /attendance/face/challenge/` returns three randomised steps, the three photos go to
+    `POST /attendance/face/verify/`, and the one-use `verification_id` is sent with the check-in/out request together
+    with the device token. The server does all the matching and liveness checks; the phone keeps no photos.
+  - Removing a phone sends `POST /staff/devices/<id>/remove-request/` for administrator approval; admins can
+    "Reset face" for a staff member (Admin → Staff).
+  - Admin → System settings controls "Require face verification" and "Require an approved phone".
+  - The camera permission is requested on first use; if refused, the screen explains how to turn it on.
 - Light theme only, matching the web app.

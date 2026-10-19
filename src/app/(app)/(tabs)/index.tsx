@@ -69,7 +69,9 @@ export default function Home() {
   const rec = data?.record;
   const state = data?.state ?? 'not_checked_in';
   const needsFace = !!me?.require_face_verification && !me?.face_enrolled;
-  const needsDevice = !!me?.require_approved_device && !me?.has_approved_device;
+  const needsDevice = !!me?.require_approved_device && !me?.has_current_approved_device;
+  // The account has a registered phone, but it isn't this one.
+  const wrongDevice = needsDevice && !!me?.has_approved_device;
   const checkoutAfter = hm5(data?.checkout_allowed_after ?? '16:30');
   const checkinClosesAfter = hm5(data?.checkin_closes_after ?? '12:00');
   const checkinOpen = data?.checkin_open ?? true;
@@ -101,6 +103,8 @@ export default function Home() {
         {needsFace ? (
           <Alert tone="warn">Set up face verification to mark attendance.{' '}
             <Link href="/face" className="font-bold text-navy">Set up now →</Link></Alert>
+        ) : wrongDevice ? (
+          <Alert tone="error">This is not your registered attendance device. Use the phone you set up Face ID on, or ask an administrator to reset your device.</Alert>
         ) : needsDevice ? (
           <Alert tone="warn">Set up face verification on this phone before marking attendance.{' '}
             <Link href="/face" className="font-bold text-navy">Set up now →</Link></Alert>

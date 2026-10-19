@@ -48,7 +48,7 @@ src/
 | Login (+MFA, reset) | `login.tsx` |
 | Home / check-in / ActivitySheet | `(tabs)/index.tsx`, `ActivitySheet` |
 | History | `(tabs)/history.tsx` (month stepper) |
-| Requests (leave / official duty) | `(tabs)/requests.tsx` (bottom-sheet form) |
+| Requests (leave / official duty / recurring leave) | `(tabs)/requests.tsx` (bottom-sheet form, three tabs) |
 | FaceSetup | `face.tsx` |
 | DeviceSetup (MFA), Profile | `device.tsx`, `(tabs)/account.tsx`, `password.tsx` |
 | Admin pages | `(tabs)/admin.tsx` hub + `admin/*` |
@@ -66,13 +66,15 @@ Android mock-location refusal, refresh on app foreground.
 - **Maps:** Android release builds need a Google Maps API key (`android.config.googleMaps.apiKey` in `app.json`).
 - **Face verification (same as the web app):** attendance uses live camera face verification, not Face ID,
   fingerprint or passkeys.
-  - *Set up* (Account → Face verification): three front-camera photos go to `POST /staff/face/enroll/` with a random
+  - *Set up* (Account → Face verification): the screen shows three poses but only the first front-camera photo is sent to `POST /staff/face/enroll/` with a random
     device token (kept in the phone's secure storage) and the phone model as its label. This also binds the phone.
-  - *Check in / out*: `POST /attendance/face/challenge/` returns three randomised steps, the three photos go to
+  - *Check in / out*: `POST /attendance/face/challenge/` returns a single step, one photo goes to
     `POST /attendance/face/verify/`, and the one-use `verification_id` is sent with the check-in/out request together
     with the device token. The server does all the matching and liveness checks; the phone keeps no photos.
-  - Removing a phone sends `POST /staff/devices/<id>/remove-request/` for administrator approval; admins can
-    "Reset face" for a staff member (Admin → Staff).
-  - Admin → System settings controls "Require face verification" and "Require an approved phone".
+  - Removing a phone sends `POST /staff/devices/<id>/remove-request/` for administrator approval; approval also
+    removes the face verification, so the staff member sets up again.
+  - Admin → System settings controls "Require face verification" and "Require a registered device".
+  - The device token is also sent at sign-in and with `/auth/me/`; if the account has a registered phone but this is a
+    different one, Home and the Face screen show "This is not your registered attendance device…" and check-in stays off.
   - The camera permission is requested on first use; if refused, the screen explains how to turn it on.
 - Light theme only, matching the web app.

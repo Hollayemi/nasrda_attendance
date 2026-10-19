@@ -55,7 +55,7 @@ function Inner() {
       <Card className="mt-3">
         <Text className="text-[17px] font-extrabold text-ink">Face and approved-device verification</Text>
         <SwitchRow label="Require face verification for attendance" hint="Staff must verify their face with the camera to check in or out." value={form.require_face_verification} onChange={(v) => setForm({ ...form, require_face_verification: v })} />
-        <SwitchRow label="Require an approved phone" hint="Attendance can only be recorded from the phone bound to the staff member's face verification." value={form.require_approved_device} onChange={(v) => setForm({ ...form, require_approved_device: v })} />
+        <SwitchRow label="Require a registered device for attendance" hint="Attendance can only be recorded from the phone bound to the staff member's face verification." value={form.require_approved_device} onChange={(v) => setForm({ ...form, require_approved_device: v })} />
         {num('max_devices', 'Maximum approved devices per staff')}
       </Card>
       {msg ? <Alert tone={msg.ok ? 'success' : 'error'} className="mt-3">{msg.text}</Alert> : null}

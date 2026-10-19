@@ -10,7 +10,7 @@ import { colors } from '@/theme';
 import type { Device, FaceStatus } from '@/types';
 
 export default function FaceSetup() {
-  const { refresh } = useAuth();
+  const { me, refresh } = useAuth();
   const qc = useQueryClient();
   const [enrolling, setEnrolling] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -24,10 +24,12 @@ export default function FaceSetup() {
 
   // Face already enrolled (e.g. on another phone) but this account has no bound device: bind this phone.
   const canBindReplacement = active && !activeDevice;
+  // A phone is registered for this account, but this is a different phone.
+  const otherPhone = !!me?.require_approved_device && !!me?.has_approved_device && !me?.has_current_approved_device;
 
   const requestRemoval = useMutation({
     mutationFn: (id: number) => api.post(`/staff/devices/${id}/remove-request/`),
-    onSuccess: () => { setMsg({ ok: true, text: 'Removal request sent. An administrator must approve it before this phone is removed.' }); qc.invalidateQueries({ queryKey: ['devices'] }); },
+    onSuccess: () => { setMsg({ ok: true, text: 'Removal request sent. An administrator must approve it before this phone and your face verification are removed.' }); qc.invalidateQueries({ queryKey: ['devices'] }); },
     onError: (e) => setMsg({ ok: false, text: errorOf(e).message }),
   });
 
@@ -45,6 +47,10 @@ export default function FaceSetup() {
     <Screen>
       {msg ? <Alert tone={msg.ok ? 'success' : 'error'} className="mt-2">{msg.text}</Alert> : null}
 
+      {otherPhone ? (
+        <Alert tone="error" className="mt-2">This is not your registered attendance device. Use the phone you set up Face ID on, or ask an administrator to reset your device.</Alert>
+      ) : null}
+
       {active ? (
         <Card className="mt-2">
           <View className="flex-row items-center gap-3">
@@ -59,15 +65,13 @@ export default function FaceSetup() {
             <View><Muted>Enrolled</Muted><Text className="text-[14px] font-bold text-ink">{data?.enrolled_at ? fmtDateTime(data.enrolled_at) : '—'}</Text></View>
             <View><Muted>Last verified</Muted><Text className="text-[14px] font-bold text-ink">{data?.last_verified_at ? fmtDateTime(data.last_verified_at) : '—'}</Text></View>
           </View>
-          {/* <Muted className="mt-3">If your appearance changes or verification keeps failing, ask an administrator to reset your face verification.</Muted> */}
-
-          {activeDevice?.removal_pending ? (
-            <Alert tone="warn" className="mt-3">Phone removal is awaiting administrator approval. You can keep using this phone until it is approved.</Alert>
+                    {activeDevice?.removal_pending ? (
+            <Alert tone="warn" className="mt-3">Phone removal is awaiting administrator approval. You can keep using this phone until it is approved. Once approved, your face verification is removed too and you'll set it up again.</Alert>
           ) : activeDevice ? (
             <Button className="mt-3" variant="danger" size="sm" icon="trash-outline" title="Remove this phone" loading={requestRemoval.isPending}
               onPress={() => requestRemoval.mutate(activeDevice.id)} />
           ) : canBindReplacement ? (
-            <Button className="mt-3" icon="scan-outline" title="Set up face verification on this phone" onPress={() => setEnrolling(true)} />
+            <Button className="mt-3" icon="scan-outline" title="Set up this device" onPress={() => setEnrolling(true)} />
           ) : null}
         </Card>
       ) : (

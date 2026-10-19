@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Alert, Button, TextField } from '@/components/ui';
 import { api, errorOf } from '@/lib/api';
+import { deviceToken } from '@/lib/device';
 import { useAuth } from '@/lib/auth';
 import { logo } from '@/lib/assets';
 import { colors } from '@/theme';
@@ -29,13 +30,13 @@ export default function Login() {
   };
 
   const submit = () => run(async () => {
-    const { data } = await api.post('/auth/login/', { ippis_number: ippis.trim(), password });
+    const { data } = await api.post('/auth/login/', { ippis_number: ippis.trim(), password, device_token: await deviceToken() });
     if (data.mfa_required) { setMode('mfa'); return; }
     // The login response is the authoritative identity for this new server session.
     await adoptSession({ authenticated: true, ...data });
   });
   const verifyMfa = () => run(async () => {
-    const { data } = await api.post('/auth/mfa/verify/', { code: mfaCode });
+    const { data } = await api.post('/auth/mfa/verify/', { code: mfaCode, device_token: await deviceToken() });
     await adoptSession({ authenticated: true, ...data });
   });
   const requestReset = () => run(async () => {

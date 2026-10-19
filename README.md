@@ -48,7 +48,7 @@ src/
 | Login (+MFA, reset) | `login.tsx` |
 | Home / check-in / ActivitySheet | `(tabs)/index.tsx`, `ActivitySheet` |
 | History | `(tabs)/history.tsx` (month stepper) |
-| Requests (leave / official duty) | `(tabs)/requests.tsx` (bottom-sheet form) |
+| Requests (leave / official duty / recurring leave) | `(tabs)/requests.tsx` (bottom-sheet form, three tabs) |
 | FaceSetup | `face.tsx` |
 | DeviceSetup (MFA), Profile | `device.tsx`, `(tabs)/account.tsx`, `password.tsx` |
 | Admin pages | `(tabs)/admin.tsx` hub + `admin/*` |
@@ -74,5 +74,7 @@ Android mock-location refusal, refresh on app foreground.
   - Removing a phone sends `POST /staff/devices/<id>/remove-request/` for administrator approval; approval also
     removes the face verification, so the staff member sets up again.
   - Admin → System settings controls "Require face verification" and "Require a registered device".
+  - The device token is also sent at sign-in and with `/auth/me/`; if the account has a registered phone but this is a
+    different one, Home and the Face screen show "This is not your registered attendance device…" and check-in stays off.
   - The camera permission is requested on first use; if refused, the screen explains how to turn it on.
 - Light theme only, matching the web app.

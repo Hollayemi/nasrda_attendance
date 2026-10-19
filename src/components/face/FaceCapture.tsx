@@ -76,8 +76,8 @@ export function FaceCapture({ visible, mode, action, onComplete, onClose }: Prop
         return;
       }
       const shot = await camera.current.takePictureAsync({ quality: 0.9, shutterSound: false, skipProcessing: false });
-      // Keep uploads small (the web app sends ~720px frames).
-      const small = await manipulateAsync(shot.uri, [{ resize: { width: 720 } }], { compress: 0.88, format: SaveFormat.JPEG, base64: true });
+      // Keep uploads small (the web app sends ~540px frames).
+      const small = await manipulateAsync(shot.uri, [{ resize: { width: 540 } }], { compress: 0.82, format: SaveFormat.JPEG, base64: true });
       if (!small.base64) throw new Error('Could not read the photo.');
       const next = [...images, `data:image/jpeg;base64,${small.base64}`];
       Haptics.selectionAsync().catch(() => {});

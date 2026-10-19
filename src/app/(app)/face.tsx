@@ -10,7 +10,7 @@ import { colors } from '@/theme';
 import type { Device, FaceStatus } from '@/types';
 
 export default function FaceSetup() {
-  const { refresh } = useAuth();
+  const { me, refresh } = useAuth();
   const qc = useQueryClient();
   const [enrolling, setEnrolling] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -21,6 +21,8 @@ export default function FaceSetup() {
   const activeDevice = devices.find((d) => d.status === 'active');
   // Face already enrolled (e.g. on another phone) but this account has no bound device: bind this phone.
   const canBindReplacement = active && !activeDevice;
+  // A phone is registered for this account, but this is a different phone.
+  const otherPhone = !!me?.require_approved_device && !!me?.has_approved_device && !me?.has_current_approved_device;
 
   const requestRemoval = useMutation({
     mutationFn: (id: number) => api.post(`/staff/devices/${id}/remove-request/`),
@@ -41,6 +43,10 @@ export default function FaceSetup() {
   return (
     <Screen>
       {msg ? <Alert tone={msg.ok ? 'success' : 'error'} className="mt-2">{msg.text}</Alert> : null}
+
+      {otherPhone ? (
+        <Alert tone="error" className="mt-2">This is not your registered attendance device. Use the phone you set up Face ID on, or ask an administrator to reset your device.</Alert>
+      ) : null}
 
       {active ? (
         <Card className="mt-2">

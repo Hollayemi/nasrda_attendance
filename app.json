@@ -11,13 +11,9 @@
     "ios": {
       "bundleIdentifier": "ng.gov.nasrda.attendance",
       "supportsTablet": true,
-      "associatedDomains": [
-        "webcredentials:attendance.bots.ng"
-      ],
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "NASRDA Attendance uses your location to confirm you are within an authorised campus when you check in or out.",
-        "NSFaceIDUsageDescription": "Face ID verifies that it is really you when you mark attendance.",
-        "ITSAppUsesNonExemptEncryption": false
+        "NSCameraUsageDescription": "NASRDA Attendance uses the front camera to verify your face when you check in or out."
       }
     },
     "android": {
@@ -29,23 +25,16 @@
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "USE_BIOMETRIC",
-        "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT",
+        "CAMERA",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA"
       ],
       "predictiveBackGestureEnabled": false
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      [
-        "expo-local-authentication",
-        {
-          "faceIDPermission": "Face ID verifies that it is really you when you mark attendance."
-        }
-      ],
       [
         "expo-splash-screen",
         {
@@ -58,6 +47,14 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "NASRDA Attendance uses your location to confirm you are within an authorised campus when you check in or out."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "NASRDA Attendance uses the front camera to verify your face when you check in or out.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
         }
       ]
     ],

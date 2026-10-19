@@ -44,7 +44,7 @@ export function EmptyState({ icon = 'file-tray-outline', title, subtitle }: { ic
 
 export function StatTile({ value, label, icon, color = colors.navy, bg = '#EEF1FB' }: { value: string | number; label: string; icon: IconName; color?: string; bg?: string }) {
   return (
-    <View style={shadow} className="min-w-[46%] flex-1 rounded-2xl bg-white p-3.5">
+    <View style={shadow} className="min-w-[32%] flex-1 rounded-2xl bg-white p-3.5">
       <View className="mb-2.5 h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: bg }}>
         <Icon name={icon} size={18} color={color} />
       </View>

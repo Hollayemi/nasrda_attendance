@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/auth';
 import { colors } from '@/theme';
 
 const screens: [string, string][] = [
-  ['device', 'Device & biometrics'], ['password', 'Change password'],
+  ['face', 'Face verification'], ['device', 'Authenticator MFA'], ['password', 'Change password'],
   ['admin/approvals', 'Approvals'], ['admin/staff', 'Staff'], ['admin/departments', 'Departments'],
   ['admin/holidays', 'Holidays'], ['admin/roles', 'Roles & permissions'], ['admin/settings', 'System settings'],
   ['admin/reports', 'Reports'], ['admin/audit', 'Audit log'], ['admin/geofence', 'Geofences'],

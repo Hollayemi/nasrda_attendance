@@ -12,7 +12,7 @@ export default function Account() {
   const { me, logout } = useAuth();
   const { data: devices = [] } = useQuery({ queryKey: ['devices'], queryFn: () => api.get('/staff/devices/').then((r) => r.data as Device[]) });
   const active = devices.find((d) => d.status === 'active');
-  const pending = devices.find((d) => d.status === 'pending');
+
 
   const confirmSignOut = () =>
     NativeAlert.alert('Sign out?', 'You will need your IPPIS number and password to sign back in.', [
@@ -32,9 +32,9 @@ export default function Account() {
       </Card>
 
       <SectionTitle>Security</SectionTitle>
-      <ListRow icon="finger-print" title="Device & biometrics" chevron onPress={() => router.push('/device')}
-        subtitle={active ? `${active.label} · registered` : pending ? 'Waiting for approval' : 'No device registered'}
-        right={active ? <Pill label="ACTIVE" tone="green" /> : pending ? <Pill label="PENDING" tone="amber" /> : me?.require_passkey ? <Pill label="REQUIRED" tone="red" /> : undefined} />
+      <ListRow icon="scan-outline" title="Face verification" chevron onPress={() => router.push('/face')}
+        subtitle={me?.face_enrolled ? (active ? `${active.label} · registered` : 'Enrolled · no phone registered') : 'Set up to mark attendance'}
+        right={me?.face_enrolled ? (active ? <Pill label="ACTIVE" tone="green" /> : <Pill label="SET UP" tone="amber" />) : me?.require_face_verification ? <Pill label="REQUIRED" tone="red" /> : undefined} />
       <ListRow icon="key-outline" title="Change password" subtitle="Choose a new sign-in password" chevron onPress={() => router.push('/password')} />
       {me?.mfa_enabled ? (
         <ListRow icon="shield-checkmark-outline" title="Authenticator MFA" chevron onPress={() => router.push('/device')}

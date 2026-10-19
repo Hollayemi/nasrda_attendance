@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, setUnauthorizedHandler } from '@/lib/api';
+import { deviceToken } from '@/lib/device';
 import type { Me } from '@/types';
 
 type Ctx = {
@@ -22,7 +23,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [override, setOverride] = useState<Me | undefined>();
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['me'],
-    queryFn: () => api.get('/auth/me/').then((r) => r.data as Me),
+    // The device token lets the server say whether THIS phone is the one registered for the account.
+    queryFn: async () => api.get('/auth/me/', { headers: { 'X-Attendance-Device-Token': await deviceToken() } }).then((r) => r.data as Me),
   });
   const me = override ?? data;
 

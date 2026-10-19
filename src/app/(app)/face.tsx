@@ -19,6 +19,9 @@ export default function FaceSetup() {
   const { data: devices = [] } = useQuery({ queryKey: ['devices'], queryFn: () => api.get('/staff/devices/').then((r) => r.data as Device[]) });
   const active = data?.status === 'active';
   const activeDevice = devices.find((d) => d.status === 'active');
+
+  console.log(devices, activeDevice)
+
   // Face already enrolled (e.g. on another phone) but this account has no bound device: bind this phone.
   const canBindReplacement = active && !activeDevice;
 
@@ -56,7 +59,7 @@ export default function FaceSetup() {
             <View><Muted>Enrolled</Muted><Text className="text-[14px] font-bold text-ink">{data?.enrolled_at ? fmtDateTime(data.enrolled_at) : '—'}</Text></View>
             <View><Muted>Last verified</Muted><Text className="text-[14px] font-bold text-ink">{data?.last_verified_at ? fmtDateTime(data.last_verified_at) : '—'}</Text></View>
           </View>
-          <Muted className="mt-3">If your appearance changes or verification keeps failing, ask an administrator to reset your face verification.</Muted>
+          {/* <Muted className="mt-3">If your appearance changes or verification keeps failing, ask an administrator to reset your face verification.</Muted> */}
 
           {activeDevice?.removal_pending ? (
             <Alert tone="warn" className="mt-3">Phone removal is awaiting administrator approval. You can keep using this phone until it is approved.</Alert>

@@ -13,6 +13,7 @@ export default function Account() {
   const { data: devices = [] } = useQuery({ queryKey: ['devices'], queryFn: () => api.get('/staff/devices/').then((r) => r.data as Device[]) });
   const active = devices.find((d) => d.status === 'active');
 
+
   const confirmSignOut = () =>
     NativeAlert.alert('Sign out?', 'You will need your IPPIS number and password to sign back in.', [
       { text: 'Cancel', style: 'cancel' },

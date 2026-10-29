@@ -1,13 +1,14 @@
+
 {
   "name": "nasrda-attendance",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
-    "@expo/ui": "~57.0.21",
-    "@expo/vector-icons": "^15.1.1",
-    "@react-native-community/datetimepicker": "^9.1.0",
+    "@expo/vector-icons": "^15.0.0",
+    "@react-native-community/datetimepicker": "latest",
     "@tanstack/react-query": "^5.104.1",
     "axios": "^1.20.0",
+<<<<<<< HEAD
     "expo": "~57.0.26",
     "expo-camera": "~57.0.6",
     "expo-clipboard": "~57.0.2",
@@ -45,11 +46,46 @@
     "react-native-svg": "^15.15.4",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.10.1",
+=======
+    "expo": "~58.0.0",
+    "expo-camera": "latest",
+    "expo-clipboard": "latest",
+    "expo-constants": "latest",
+    "expo-crypto": "latest",
+    "expo-device": "latest",
+    "expo-document-picker": "latest",
+    "expo-file-system": "latest",
+    "expo-font": "latest",
+    "expo-haptics": "latest",
+    "expo-image": "latest",
+    "expo-image-manipulator": "latest",
+    "expo-linear-gradient": "latest",
+    "expo-linking": "latest",
+    "expo-location": "latest",
+    "expo-network": "latest",
+    "expo-router": "latest",
+    "expo-secure-store": "latest",
+    "expo-sharing": "latest",
+    "expo-splash-screen": "latest",
+    "expo-status-bar": "latest",
+    "expo-web-browser": "latest",
+    "nativewind": "^4.2.7",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.0",
+    "react-native-gesture-handler": "latest",
+    "react-native-maps": "latest",
+    "react-native-reanimated": "latest",
+    "react-native-safe-area-context": "latest",
+    "react-native-screens": "latest",
+    "react-native-svg": "latest",
+    "react-native-web": "0.21.0",
+>>>>>>> a235b6897f7be7120e9c96e141efb915794f2577
     "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
-    "typescript": "~6.0.3"
+    "typescript": "~5.9.2"
   },
   "scripts": {
     "start": "expo start",

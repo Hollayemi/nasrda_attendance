@@ -7,12 +7,7 @@ import { api, errorOf } from '@/lib/api';
 import { colors } from '@/theme';
 import type { Activity, Category } from '@/types';
 
-const blank = { category: '' as number | '', description: '' };
-/** The server still stores a short title per activity; derive it from the description. */
-const titleOf = (description: string) => {
-  const t = description.trim().replace(/\s+/g, ' ');
-  return t.length > 80 ? `${t.slice(0, 77)}…` : t;
-};
+const blank = { category: '' as number | '', title: '', description: '' };
 const ALLOWED = ['pdf', 'docx', 'xlsx', 'jpg', 'jpeg', 'png'];
 const MAX_BYTES = 5 * 1024 * 1024;
 
@@ -30,7 +25,7 @@ export function ActivitySheet({ visible, busy, error, onClose, onSubmit }: Props
 
   const add = useMutation({
     mutationFn: async () => {
-      const { data } = await api.post('/activities/today/', { category: Number(form.category), title: titleOf(form.description), description: form.description.trim() });
+      const { data } = await api.post('/activities/today/', { category: Number(form.category), title: form.title.trim(), description: form.description.trim() });
       if (file) {
         const fd = new FormData();
         fd.append('file', { uri: file.uri, name: file.name, type: file.mimeType ?? 'application/octet-stream' } as any);
@@ -62,10 +57,10 @@ export function ActivitySheet({ visible, busy, error, onClose, onSubmit }: Props
   };
 
   const set = <K extends keyof typeof blank>(k: K) => (v: (typeof blank)[K]) => setForm((f) => ({ ...f, [k]: v }));
-  const valid = form.category !== '' && !!form.description.trim();
+  const valid = form.category !== '' && !!form.title.trim() && !!form.description.trim();
   const count = acts.data?.length ?? 0;
   const confirmRemove = (a: Activity) =>
-    NativeAlert.alert('Remove activity?', a.description || a.title, [{ text: 'Cancel', style: 'cancel' }, { text: 'Remove', style: 'destructive', onPress: () => remove.mutate(a.id) }]);
+    NativeAlert.alert('Remove activity?', a.title || a.description, [{ text: 'Cancel', style: 'cancel' }, { text: 'Remove', style: 'destructive', onPress: () => remove.mutate(a.id) }]);
 
   return (
     <Sheet
@@ -82,7 +77,8 @@ export function ActivitySheet({ visible, busy, error, onClose, onSubmit }: Props
       {acts.data?.map((a) => (
         <View key={a.id} className="my-1 flex-row items-center justify-between rounded-xl bg-white px-3.5 py-3">
           <View className="mr-3 flex-1">
-            <Text numberOfLines={2} className="text-[15px] font-bold text-ink">{a.description || a.title}</Text>
+            <Text numberOfLines={2} className="text-[15px] font-bold text-ink">{a.title || a.description}</Text>
+            {a.title && a.description ? <Text numberOfLines={2} className="text-[13px] text-ink">{a.description}</Text> : null}
             <Muted>{cats.data?.find((c) => c.id === a.category)?.name ?? ''}</Muted>
           </View>
           <Pressable hitSlop={10} onPress={() => confirmRemove(a)} className="h-9 w-9 items-center justify-center rounded-full bg-tint-red active:opacity-70" accessibilityLabel="Remove activity">
@@ -94,6 +90,7 @@ export function ActivitySheet({ visible, busy, error, onClose, onSubmit }: Props
       <View className="mt-3 rounded-2xl bg-white p-4">
         <Text className="text-[15px] font-extrabold text-ink">Add an activity</Text>
         <Select label="Category" value={form.category} onChange={set('category')} placeholder="Select…" options={(cats.data ?? []).map((c) => ({ value: c.id, label: c.name }))} />
+        <TextField label="Activity title" value={form.title} onChangeText={set('title')} placeholder="e.g. Prepared monthly report" maxLength={120} />
         <TextField label="Description" multiline value={form.description} onChangeText={set('description')} placeholder="What did you work on today?" />
 
         <Text className="mb-1.5 mt-3 text-[13px] font-semibold text-ink">Supporting document (optional)</Text>

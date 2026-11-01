@@ -8,13 +8,15 @@ import { fmtDateTime, fmtDay, titleCase, todayISO } from '@/lib/format';
 import { shadow } from '@/theme';
 import { RequirePerm } from '@/hooks/useRequire';
 
-type Tab = 'leave' | 'official-duty' | 'review' | 'devices' | 'department-review';
-type RecallTarget = { id: number; kind: 'leave' | 'official-duty'; staff: string; endDate: string };
-const TABS: [Tab, string][] = [['leave', 'Leave'], ['official-duty', 'Official duty'], ['review', 'Flagged'], ['devices', 'Devices'], ['department-review', 'Department']];
+type Tab = 'leave' | 'official-duty' | 'recurring-leave' | 'devices' | 'department-review';
+type RecallTarget = { id: number; kind: 'leave' | 'official-duty' | 'recurring-leave'; staff: string; endDate: string };
+const TABS: [Tab, string][] = [['leave', 'Leave'], ['official-duty', 'Official duty'], ['recurring-leave', 'Recurring'], ['devices', 'Devices'], ['department-review', 'Department']];
+
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const listUrl: Record<Tab, string> = {
   leave: '/admin/leave/?include_active=true', 'official-duty': '/admin/official-duty/?include_active=true',
-  review: '/admin/review-queue/', devices: '/admin/device-removals/', 'department-review': '/admin/department-review/',
+  'recurring-leave': '/admin/recurring-leave/?include_active=true', devices: '/admin/device-removals/', 'department-review': '/admin/department-review/',
 };
 
 export default function Approvals() {
@@ -37,7 +39,7 @@ function Inner() {
   const decide = useMutation({
     mutationFn: ({ id, decision, type }: { id: number; decision: string; type?: string }) => {
       const url = tab === 'leave' ? `/admin/leave/${id}/decide/` : tab === 'official-duty' ? `/admin/official-duty/${id}/decide/`
-        : tab === 'review' ? `/admin/review-queue/${id}/decide/` : tab === 'department-review' ? `/admin/department-review/${type}/${id}/decide/` : `/admin/device-removals/${id}/decide/`;
+        : tab === 'recurring-leave' ? `/admin/recurring-leave/${id}/decide/` : tab === 'department-review' ? `/admin/department-review/${type}/${id}/decide/` : `/admin/device-removals/${id}/decide/`;
       return api.post(url, { decision });
     },
     onSuccess: () => { setActionErr(''); qc.invalidateQueries({ queryKey: [tab] }); },
@@ -48,7 +50,7 @@ function Inner() {
     onSuccess: () => { setRecall(null); setReason(''); qc.invalidateQueries({ queryKey: [tab] }); },
     onError: (e) => setRecallErr(errorOf(e).message),
   });
-  const openRecall = (item: any, kind: 'leave' | 'official-duty') => {
+  const openRecall = (item: any, kind: 'leave' | 'official-duty' | 'recurring-leave') => {
     setRecallErr(''); setReason(''); setReturnDate(todayISO());
     setRecall({ id: item.id, kind, staff: item.staff_name ?? item.staff, endDate: item.end_date });
   };
@@ -56,7 +58,7 @@ function Inner() {
   const detail = (item: any) =>
     tab === 'leave' ? `${titleCase(item.kind)} · ${fmtDay(item.start_date)} → ${fmtDay(item.end_date)}`
     : tab === 'official-duty' ? `${item.location} · ${fmtDay(item.start_date)} → ${fmtDay(item.end_date)}`
-    : tab === 'review' ? `${fmtDay(item.date)} · ${item.campus}`
+    : tab === 'recurring-leave' ? `Off: ${(item.off_weekdays ?? []).map((d: number) => WEEKDAYS[d]).join(', ')} · ${fmtDay(item.start_date)} → ${fmtDay(item.end_date)}`
     : tab === 'devices' ? `${item.device_label} · IPPIS ${item.ippis}`
     : item.detail;
 
@@ -67,29 +69,27 @@ function Inner() {
         {actionErr ? <Alert tone="error">{actionErr}</Alert> : null}
         {isLoading ? <Loading /> : data.length === 0 ? <EmptyState icon="checkmark-done-circle-outline" title="Nothing pending here" subtitle="You're all caught up." /> : null}
         {data.map((item) => {
-          const recallable = tab === 'leave' || tab === 'official-duty' ? item.status === 'approved' : !!item.recallable;
-          const kind = tab === 'official-duty' || item.type === 'official-duty' ? 'official-duty' : 'leave';
-          const isReview = tab === 'review';
+          const recallable = tab === 'leave' || tab === 'official-duty' || tab === 'recurring-leave' ? item.status === 'approved' : !!item.recallable;
+          const kind = tab === 'recurring-leave' || item.type === 'recurring-leave' ? 'recurring-leave' : tab === 'official-duty' || item.type === 'official-duty' ? 'official-duty' : 'leave';
           return (
             <View key={`${item.type ?? tab}-${item.id}`} style={shadow} className="my-1.5 rounded-2xl bg-white p-4">
               <View className="flex-row items-start justify-between gap-2">
                 <Text className="flex-1 text-[16px] font-extrabold text-ink">{item.staff_name ?? item.staff}</Text>
                 {item.type ? <Pill label={titleCase(item.type).toUpperCase()} tone="navy" /> : null}
-                {recallable && (tab === 'leave' || tab === 'official-duty') ? <Pill label="ACTIVE" tone="green" /> : null}
+                {recallable && (tab === 'leave' || tab === 'official-duty' || tab === 'recurring-leave') ? <Pill label="ACTIVE" tone="green" /> : null}
               </View>
               <Text className="mt-1 text-[13px] leading-[19px] text-ink-muted">{detail(item)}</Text>
               {item.reason ? <Text className="mt-1.5 text-[13.5px] leading-[19px] text-ink">{item.reason}</Text> : null}
-              {isReview && item.flags?.length ? <Text className="mt-1.5 text-[13px] font-semibold text-brand-red">Flags: {item.flags.map((f: string) => titleCase(f)).join(', ')}</Text> : null}
               {tab === 'devices' ? <Text className="mt-1 text-[12.5px] text-ink-muted">Requested {fmtDateTime(item.requested_at)}</Text> : null}
               <View className="mt-3">
                 {recallable ? (
                   <Button variant="secondary" size="sm" icon="return-up-back-outline" title="Recall from duty" onPress={() => openRecall(item, kind)} />
                 ) : (
                   <ButtonRow>
-                    <Button variant="success" size="sm" icon="checkmark" loading={decide.isPending && decide.variables?.id === item.id} title={isReview ? 'Mark normal' : 'Approve'}
-                      onPress={() => decide.mutate({ id: item.id, type: item.type, decision: isReview ? 'normal' : 'approved' })} />
-                    <Button variant="danger" size="sm" icon={isReview ? 'flag-outline' : 'close'} title={isReview ? 'Flag for HR' : 'Reject'}
-                      onPress={() => decide.mutate({ id: item.id, type: item.type, decision: isReview ? 'confirmed_issue' : 'rejected' })} />
+                    <Button variant="success" size="sm" icon="checkmark" loading={decide.isPending && decide.variables?.id === item.id} title="Approve"
+                      onPress={() => decide.mutate({ id: item.id, type: item.type, decision: 'approved' })} />
+                    <Button variant="danger" size="sm" icon="close" title="Reject"
+                      onPress={() => decide.mutate({ id: item.id, type: item.type, decision: 'rejected' })} />
                   </ButtonRow>
                 )}
               </View>

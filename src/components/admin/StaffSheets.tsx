@@ -22,10 +22,10 @@ const byCampus = (deps: Department[], campusId: string | number) => (!campusId ?
 
 type Form = {
   ippis_number: string; file_number: string; first_name: string; middle_name: string; last_name: string; email: string; phone: string;
-  department: number | ''; primary_campus: number | ''; campus_policy: string; designation: string; grade_level: string;
+  department: number | ''; primary_campus: number | ''; campus_policy: string; secondary_campus_ids: number[]; designation: string; grade_level: string;
   employment_status: string; is_nursing_mother: boolean; mfa_enabled: boolean; role_ids: number[];
 };
-const blank: Form = { ippis_number: '', file_number: '', first_name: '', middle_name: '', last_name: '', email: '', phone: '', department: '', primary_campus: '', campus_policy: 'one', designation: '', grade_level: '', employment_status: 'permanent', is_nursing_mother: false, mfa_enabled: false, role_ids: [] };
+const blank: Form = { ippis_number: '', file_number: '', first_name: '', middle_name: '', last_name: '', email: '', phone: '', department: '', primary_campus: '', campus_policy: 'one', secondary_campus_ids: [], designation: '', grade_level: '', employment_status: 'permanent', is_nursing_mother: false, mfa_enabled: false, role_ids: [] };
 
 function FormFields({ form, setForm }: { form: Form; setForm: (f: Form) => void }) {
   const { departments, campuses, roles } = useLookups();
@@ -41,10 +41,15 @@ function FormFields({ form, setForm }: { form: Form; setForm: (f: Form) => void 
       <TextField label="Middle name" value={form.middle_name} onChangeText={t('middle_name')} />
       <TextField label="Email" value={form.email} onChangeText={t('email')} keyboardType="email-address" autoCapitalize="none" />
       <TextField label="Phone" value={form.phone} onChangeText={t('phone')} keyboardType="phone-pad" />
-      <Select label="Primary campus" value={form.primary_campus} onChange={(v) => setForm({ ...form, primary_campus: v, department: '' })} placeholder="— None —" options={campuses.map((c) => ({ value: c.id, label: c.name }))} />
+      <Select label="Primary campus" value={form.primary_campus} onChange={(v) => setForm({ ...form, primary_campus: v, department: '', secondary_campus_ids: form.secondary_campus_ids.filter((id) => id !== Number(v)) })} placeholder="— None —" options={campuses.map((c) => ({ value: c.id, label: c.name }))} />
       <Select label="Department" value={form.department} onChange={(v) => setForm({ ...form, department: v })} disabled={!form.primary_campus}
         placeholder={form.primary_campus ? '— Select department —' : '— Select campus first —'} options={byCampus(departments, form.primary_campus).map((d) => ({ value: d.id, label: d.name }))} />
-      <Select label="Campus policy" value={form.campus_policy} onChange={t('campus_policy')} options={[{ value: 'one', label: 'One campus only' }, { value: 'approved', label: 'Approved campuses' }, { value: 'any', label: 'Any NASRDA campus' }]} />
+      <Select label="Campus policy" value={form.campus_policy} onChange={t('campus_policy')} options={[{ value: 'one', label: 'Primary campus' }, { value: 'approved', label: 'Primary campus + selected campuses' }, { value: 'any', label: 'Any campus' }]} />
+      {form.campus_policy === 'approved' ? (
+        <MultiSelect label="Additional approved campuses" hint="The primary campus is always allowed. This list shows other campuses only." value={form.secondary_campus_ids}
+          onChange={(v) => setForm({ ...form, secondary_campus_ids: v })} placeholder="No other campuses selected"
+          options={campuses.filter((c) => c.id !== Number(form.primary_campus)).map((c) => ({ value: c.id, label: c.name }))} />
+      ) : null}
       <View className="flex-row gap-3">
         <TextField className="flex-1" label="Designation" value={form.designation} onChangeText={t('designation')} />
         <TextField className="flex-1" label="Grade level" value={form.grade_level} onChangeText={t('grade_level')} />
@@ -103,7 +108,7 @@ export function EditStaffSheet({ staff, onClose, onSaved }: { staff: Staff | nul
     setLoadedId(staff.id); setMsg(null); setTemp('');
     setForm({
       ippis_number: staff.ippis_number, file_number: staff.file_number ?? '', first_name: staff.first_name, middle_name: staff.middle_name ?? '', last_name: staff.last_name,
-      email: staff.email, phone: staff.phone ?? '', department: staff.department ?? '', primary_campus: staff.primary_campus ?? '', campus_policy: staff.campus_policy,
+      email: staff.email, phone: staff.phone ?? '', department: staff.department ?? '', primary_campus: staff.primary_campus ?? '', campus_policy: staff.campus_policy, secondary_campus_ids: staff.secondary_campus_ids ?? [],
       designation: staff.designation ?? '', grade_level: staff.grade_level ?? '', employment_status: staff.employment_status, is_nursing_mother: staff.is_nursing_mother ?? false,
       mfa_enabled: staff.mfa_enabled ?? false, role_ids: staff.role_ids ?? [],
     });

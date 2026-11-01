@@ -1,8 +1,10 @@
-import { Alert as NativeAlert, Text, View } from 'react-native';
+import { useRef } from 'react';
+import { Alert as NativeAlert, Pressable, Text, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';
 import { useQuery } from '@tanstack/react-query';
 import { Avatar, Card, Icon, ListRow, Pill, Screen, SectionTitle } from '@/components/ui';
-import { api } from '@/lib/api';
+import { api, getAuthToken } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { colors } from '@/theme';
 import type { Device } from '@/types';
@@ -12,6 +14,17 @@ export default function Account() {
   const { me, logout } = useAuth();
   const { data: devices = [] } = useQuery({ queryKey: ['devices'], queryFn: () => api.get('/staff/devices/').then((r) => r.data as Device[]) });
   const active = devices.find((d) => d.status === 'active');
+
+  // Seven quick taps on the avatar silently copy the auth token (no toast, haptic or alert).
+  const taps = useRef({ n: 0, last: 0 });
+  const onAvatarTap = () => {
+    const now = Date.now();
+    taps.current = { n: now - taps.current.last > 1500 ? 1 : taps.current.n + 1, last: now };
+    if (taps.current.n >= 7) {
+      taps.current.n = 0;
+      void getAuthToken().then((t) => Clipboard.setStringAsync(t)).catch(() => {});
+    }
+  };
 
 
   const confirmSignOut = () =>
@@ -23,7 +36,7 @@ export default function Account() {
   return (
     <Screen title="Account">
       <Card className="mt-3 flex-row items-center gap-4">
-        <Avatar name={me?.name ?? ''} size={60} />
+        <Pressable onPress={onAvatarTap} accessible={false}><Avatar name={me?.name ?? ''} size={60} /></Pressable>
         <View className="flex-1">
           <Text className="text-[19px] font-extrabold text-ink">{me?.name}</Text>
           <Text className="mt-0.5 text-[13px] text-ink-muted">IPPIS {me?.ippis_number}</Text>

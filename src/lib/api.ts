@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { Platform } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 
 /** Server origin. Override with EXPO_PUBLIC_API_URL (see .env.example). */
 export const BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'https://attendance.bots.ng').replace(/\/$/, '');
@@ -26,6 +27,21 @@ const capture = (headers: unknown) => {
   const text = Array.isArray(raw) ? raw.join(';') : String(raw ?? '');
   const match = /csrftoken=([^;,\s]+)/.exec(text);
   if (match) csrfToken = match[1];
+  // The Django session id (HttpOnly) is only visible in Set-Cookie. Keep a copy so it survives restarts.
+  const session = /sessionid=([^;,\s]*)/.exec(text);
+  if (session) {
+    sessionCookie = session[1];
+    if (sessionCookie) SecureStore.setItemAsync(SESSION_KEY, sessionCookie).catch(() => {});
+    else SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
+  }
+};
+
+const SESSION_KEY = 'auth-session-cookie';
+let sessionCookie = '';
+/** The credentials this app sends to the server (Django session cookie + CSRF token), as a cookie string. */
+export const getAuthToken = async () => {
+  if (!sessionCookie) sessionCookie = (await SecureStore.getItemAsync(SESSION_KEY).catch(() => null)) ?? '';
+  return [sessionCookie && `sessionid=${sessionCookie}`, csrfToken && `csrftoken=${csrfToken}`].filter(Boolean).join('; ');
 };
 
 let priming: Promise<unknown> | null = null;

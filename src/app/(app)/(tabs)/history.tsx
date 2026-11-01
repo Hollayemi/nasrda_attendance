@@ -5,14 +5,16 @@ import { Card, EmptyState, Icon, Loading, Pill, Screen, StatTile } from '@/compo
 import { api } from '@/lib/api';
 import { fmtDayShort, fmtMonth, fmtTime, shiftMonth, thisMonth } from '@/lib/format';
 import { colors, shadow } from '@/theme';
-import type { AttendanceRecord } from '@/types';
+import type { AttendanceHistory } from '@/types';
 
 export default function History() {
   const [month, setMonth] = useState(thisMonth());
-  const { data = [], isLoading, refetch, isRefetching } = useQuery({
+  const { data: payload, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['history', month],
-    queryFn: () => api.get('/attendance/history/', { params: { month } }).then((r) => r.data as AttendanceRecord[]),
+    // The API returns { records, summary }; tolerate a bare array too.
+    queryFn: () => api.get('/attendance/history/', { params: { month } }).then((r) => r.data as AttendanceHistory | AttendanceHistory['records']),
   });
+  const data = Array.isArray(payload) ? payload : payload?.records ?? [];
   const late = data.filter((r) => r.check_in_status === 'late').length;
   const isCurrent = month === thisMonth();
 

@@ -29,7 +29,9 @@ export type StaffRequest = {
 };
 
 export type Option = { id: number; name: string };
-export type Campus = Option & { latitude: number; longitude: number; department_ids: number[]; departments: string[]; geofences: { id: number; kind: string; polygon: [number, number][] | null }[] };
+export type Geofence = { id: number; name: string; kind: 'circle' | 'polygon'; polygon: [number, number][] | null; is_active: boolean; department_ids: number[]; departments: string[] };
+export type Campus = Option & { latitude: number; longitude: number; boundary: [number, number][] | null; department_ids: number[]; departments: string[]; geofences: Geofence[] };
+export type AttendanceHistory = { records: AttendanceRecord[]; summary: { days_present: number; days_absent: number } };
 export type Department = Option & { campus_ids: number[] };
 export type Holiday = { id: number; date: string; name: string; kind: 'public' | 'nasrda' | 'non_working' | 'special_working' };
 export type Permission = { id: number; name: string; code: string };
@@ -37,7 +39,7 @@ export type Role = { id: number; name: string; permission_ids: number[]; permiss
 export type Staff = {
   id: number; ippis_number: string; first_name: string; last_name: string; middle_name: string; email: string; phone: string; file_number: string;
   department: number | null; department_name: string; designation: string; grade_level: string; employment_status: string;
-  primary_campus: number | null; campus_name: string; campus_policy: string; is_nursing_mother: boolean; mfa_enabled: boolean;
+  primary_campus: number | null; secondary_campus_ids: number[]; campus_name: string; campus_policy: string; is_nursing_mother: boolean; mfa_enabled: boolean;
   is_active: boolean; role_ids: number[]; roles: string[];
 };
 export type Settings = {

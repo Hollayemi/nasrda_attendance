@@ -55,8 +55,8 @@ export default function Login() {
           contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }}>
           <View className="w-full max-w-[460px] flex-1 self-center px-5">
             <View className="items-center">
-              <View className="h-[104px] w-[104px] items-center justify-center rounded-full bg-white" style={{ elevation: 8, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } }}>
-                <Image source={logo} contentFit="contain" style={{ width: 84, height: 84 }} accessibilityLabel="NASRDA" />
+              <View style={{ width: 104, height: 104, borderRadius: 52, overflow: 'hidden' }}>
+                <Image source={logo} contentFit="cover" style={{ width: 104, height: 104 }} accessibilityLabel="NASRDA" />
               </View>
               <Text className="mt-4 text-center text-[19px] font-extrabold leading-[25px] text-white">National Space Research{'\n'}and Development Agency</Text>
               <Text className="mt-1.5 text-[13px] font-semibold tracking-widest text-[#B9CBE0]">STAFF ATTENDANCE SYSTEM</Text>

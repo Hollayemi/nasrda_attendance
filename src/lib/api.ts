@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { deviceToken } from './device';
 
 /** Server origin. Override with EXPO_PUBLIC_API_URL (see .env.example). */
 export const BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'https://attendance.bots.ng').replace(/\/$/, '');
@@ -42,6 +43,19 @@ let sessionCookie = '';
 export const getAuthToken = async () => {
   if (!sessionCookie) sessionCookie = (await SecureStore.getItemAsync(SESSION_KEY).catch(() => null)) ?? '';
   return [sessionCookie && `sessionid=${sessionCookie}`, csrfToken && `csrftoken=${csrfToken}`].filter(Boolean).join('; ');
+};
+
+const FACE_ID_KEY = 'last-face-verification-id';
+let lastFaceVerificationId = '';
+/** Remember the most recent face_verification_id issued by the server (single-use, valid for ~2 minutes). */
+export const rememberFaceVerificationId = (id: string) => {
+  lastFaceVerificationId = id;
+  SecureStore.setItemAsync(FACE_ID_KEY, id).catch(() => {});
+};
+/** Everything needed to replay a check-in request elsewhere (e.g. Postman), as JSON text. */
+export const getDebugInfo = async () => {
+  if (!lastFaceVerificationId) lastFaceVerificationId = (await SecureStore.getItemAsync(FACE_ID_KEY).catch(() => null)) ?? '';
+  return JSON.stringify({ cookie: await getAuthToken(), device_token: await deviceToken(), face_verification_id: lastFaceVerificationId }, null, 2);
 };
 
 let priming: Promise<unknown> | null = null;

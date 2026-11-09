@@ -1,6 +1,6 @@
 export type Me = {
   authenticated: boolean; name: string; first_name: string; last_name: string; ippis_number: string;
-  department: string | null; can_admin: boolean; can_manage_staff: boolean; can_view_staff: boolean; can_access_staff: boolean;
+  department: string | null; primary_campus_id: number | null; can_admin: boolean; can_manage_staff: boolean; can_view_staff: boolean; can_access_staff: boolean;
   can_approve: boolean; can_manage_devices: boolean; can_access_approvals: boolean; can_export_reports: boolean;
   can_view_audit: boolean; can_manage_geofence: boolean; can_manage_roles: boolean; can_review_department_requests: boolean;
   face_enrolled: boolean; require_face_verification: boolean; has_approved_device: boolean; has_current_approved_device: boolean; require_approved_device: boolean; mfa_enabled: boolean; mfa_configured: boolean;
@@ -12,7 +12,7 @@ export type AttendanceRecord = {
   activity_report_status: string; review_status: string; activity_count: number;
 };
 export type Today = {
-  state: 'not_checked_in' | 'checked_in' | 'checked_out'; server_time: string; checkout_allowed_after: string;
+  state: 'not_checked_in' | 'checked_in' | 'checked_out'; server_time: string; checkout_allowed_after: string; checkout_closes_after: string;
   checkin_late_after: string; checkin_closes_after: string; checkin_open: boolean; is_working_day: boolean;
   non_working_reason: string | null; record: AttendanceRecord | null;
 };
@@ -29,8 +29,9 @@ export type StaffRequest = {
 };
 
 export type Option = { id: number; name: string };
-export type Geofence = { id: number; name: string; kind: 'circle' | 'polygon'; polygon: [number, number][] | null; is_active: boolean; department_ids: number[]; departments: string[] };
-export type Campus = Option & { latitude: number; longitude: number; boundary: [number, number][] | null; department_ids: number[]; departments: string[]; geofences: Geofence[] };
+export type CampusArea = { id: number; campus: number; name: string; boundary: [number, number][]; is_active: boolean };
+export type Geofence = { id: number; campus_area: number | null; campus_area_name: string; name: string; kind: 'circle' | 'polygon'; polygon: [number, number][] | null; is_active: boolean; department_ids: number[]; departments: string[] };
+export type Campus = Option & { latitude: number; longitude: number; boundary: [number, number][] | null; department_ids: number[]; departments: string[]; areas: CampusArea[]; geofences: Geofence[] };
 export type AttendanceHistory = { records: AttendanceRecord[]; summary: { days_present: number; days_absent: number } };
 export type Department = Option & { campus_ids: number[] };
 export type Holiday = { id: number; date: string; name: string; kind: 'public' | 'nasrda' | 'non_working' | 'special_working' };
@@ -43,7 +44,7 @@ export type Staff = {
   is_active: boolean; role_ids: number[]; roles: string[];
 };
 export type Settings = {
-  work_start: string; work_end: string; checkin_late_after: string; checkin_closes_after: string; checkout_allowed_after: string;
+  work_start: string; work_end: string; checkin_late_after: string; checkin_closes_after: string; checkout_allowed_after: string; checkout_closes_after: string;
   nursing_mother_checkout_after: string; grace_minutes: number; overtime_after_minutes: number; min_accuracy_m: number;
   max_speed_mps: number; max_devices: number; require_face_verification: boolean; require_approved_device: boolean;
 };

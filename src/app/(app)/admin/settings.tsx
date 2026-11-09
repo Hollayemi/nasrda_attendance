@@ -45,6 +45,7 @@ function Inner() {
         {time('checkin_late_after', 'Late check-in starts at', 'Staff who check in from this time until check-in closes are marked late.')}
         {time('checkin_closes_after', 'Check-in closes at', 'After this, check-in is disabled and staff without an approved exception are counted absent.')}
         {time('checkout_allowed_after', 'Check-out available from')}
+        {time('checkout_closes_after', 'Check-out closes at', 'After this time, staff cannot check out.')}
         {time('nursing_mother_checkout_after', 'Nursing mother check-out from', 'Applies only to staff marked as a nursing mother.')}
         {num('overtime_after_minutes', 'Overtime begins after (minutes)')}
       </Card>

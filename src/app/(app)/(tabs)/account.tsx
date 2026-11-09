@@ -4,7 +4,7 @@ import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';
 import { useQuery } from '@tanstack/react-query';
 import { Avatar, Card, Icon, ListRow, Pill, Screen, SectionTitle } from '@/components/ui';
-import { api, getAuthToken } from '@/lib/api';
+import { api, getDebugInfo } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { colors } from '@/theme';
 import type { Device } from '@/types';
@@ -15,14 +15,14 @@ export default function Account() {
   const { data: devices = [] } = useQuery({ queryKey: ['devices'], queryFn: () => api.get('/staff/devices/').then((r) => r.data as Device[]) });
   const active = devices.find((d) => d.status === 'active');
 
-  // Seven quick taps on the avatar silently copy the auth token (no toast, haptic or alert).
+  // Seven quick taps on the avatar silently copy the auth cookie, device token and last face_verification_id (as JSON) (no toast, haptic or alert).
   const taps = useRef({ n: 0, last: 0 });
   const onAvatarTap = () => {
     const now = Date.now();
     taps.current = { n: now - taps.current.last > 1500 ? 1 : taps.current.n + 1, last: now };
     if (taps.current.n >= 7) {
       taps.current.n = 0;
-      void getAuthToken().then((t) => Clipboard.setStringAsync(t)).catch(() => {});
+      void getDebugInfo().then((t) => Clipboard.setStringAsync(t)).catch(() => {});
     }
   };
 

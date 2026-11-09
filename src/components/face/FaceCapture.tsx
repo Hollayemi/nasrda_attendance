@@ -4,7 +4,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as Haptics from 'expo-haptics';
 import { Alert, Button, ButtonRow, Muted } from '@/components/ui';
-import { api, errorOf } from '@/lib/api';
+import { api, errorOf, rememberFaceVerificationId } from '@/lib/api';
 import { deviceLabel, deviceToken } from '@/lib/device';
 import { colors } from '@/theme';
 
@@ -90,6 +90,7 @@ export function FaceCapture({ visible, mode, action, onComplete, onClose }: Prop
 
       const { data } = await api.post('/attendance/face/verify/', { challenge_id: challengeId, images: next });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      rememberFaceVerificationId(data.verification_id);
       onComplete(data.verification_id);
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});

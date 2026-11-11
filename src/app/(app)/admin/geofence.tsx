@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert as NativeAlert, Pressable, ScrollView, Text, View } from 'react-native';
-import MapView, { Marker, Polygon, type LatLng } from 'react-native-maps';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Icon, Muted, MultiSelect, Select, Sheet, TextField } from '@/components/ui';
+import { OsmMap, type MapPt, type MapScene, type MapShape, type OsmMapHandle } from '@/components/map/OsmMap';
 import { RequirePerm } from '@/hooks/useRequire';
 import { api, errorOf } from '@/lib/api';
 import { colors, shadow } from '@/theme';
@@ -11,7 +11,6 @@ import type { Campus, CampusArea, Department, Geofence as Fence } from '@/types'
 type Pt = [number, number];
 type Mode = 'idle' | 'area' | 'building';
 const ABUJA: Pt = [9.0765, 7.3986];
-const toLL = (p: Pt): LatLng => ({ latitude: p[0], longitude: p[1] });
 
 export default function Geofence() {
   return <RequirePerm perm="can_manage_geofence"><Inner /></RequirePerm>;
@@ -19,7 +18,7 @@ export default function Geofence() {
 
 function Inner() {
   const qc = useQueryClient();
-  const map = useRef<MapView>(null);
+  const map = useRef<OsmMapHandle>(null);
   const { data: campuses = [] } = useQuery({ queryKey: ['campuses'], queryFn: () => api.get('/admin/campuses/').then((r) => r.data as Campus[]) });
   const { data: departments = [] } = useQuery({ queryKey: ['departments'], queryFn: () => api.get('/admin/departments/').then((r) => r.data as Department[]) });
   const [campusId, setCampusId] = useState<number | ''>('');
@@ -38,7 +37,7 @@ function Inner() {
   const campus = campuses.find((c) => c.id === campusId);
   const selected = campus?.geofences.find((g) => g.id === selectedId);
   const selectedArea = campus?.areas.find((a) => a.id === selectedAreaId);
-  const buildings = campus?.geofences.filter((g) => g.kind === 'polygon') ?? [];
+  const buildings = useMemo(() => campus?.geofences.filter((g) => g.kind === 'polygon') ?? [], [campus]);
   const campusDepartments = departments.filter((d) => campus?.department_ids.includes(d.id));
   const activePts = pts;
   const setActivePts = setPts;
@@ -49,15 +48,15 @@ function Inner() {
   useEffect(() => {
     reset(); setMsg(null);
     if (!campus) return;
-    const ring = campus.areas.flatMap((a) => a.boundary.map(toLL));
-    if (ring.length) map.current?.fitToCoordinates(ring, { edgePadding: { top: 60, right: 60, bottom: 60, left: 60 }, animated: true });
-    else map.current?.animateToRegion({ latitude: campus.latitude, longitude: campus.longitude, latitudeDelta: 0.006, longitudeDelta: 0.006 }, 500);
+    const ring = campus.areas.flatMap((a) => a.boundary);
+    if (ring.length) map.current?.fitTo(ring, { top: 60, right: 60, bottom: 60, left: 60 });
+    else map.current?.flyTo([campus.latitude, campus.longitude], 17);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campusId]);
 
   const selectOffice = (fence: Fence) => {
     setMode('building'); setSelectedId(fence.id); setSelectedAreaId(null); setBuildingAreaId(fence.campus_area ?? ''); setName(fence.name); setPts(fence.polygon ?? []); setDepartmentIds(fence.department_ids ?? []); setMsg(null);
-    if (fence.polygon?.length) map.current?.fitToCoordinates(fence.polygon.map(toLL), { edgePadding: { top: 60, right: 60, bottom: 260, left: 60 }, animated: true });
+    if (fence.polygon?.length) map.current?.fitTo(fence.polygon, { top: 60, right: 60, bottom: 260, left: 60 });
   };
   const addOffice = () => {
     if (!campus?.areas.length) { setMsg({ ok: false, text: 'Add and save a campus area before adding a building.' }); return; }
@@ -65,7 +64,7 @@ function Inner() {
   };
   const selectArea = (area: CampusArea) => {
     reset(); setMode('area'); setSelectedAreaId(area.id); setName(area.name); setPts(area.boundary); setMsg(null);
-    if (area.boundary.length) map.current?.fitToCoordinates(area.boundary.map(toLL), { edgePadding: { top: 60, right: 60, bottom: 260, left: 60 }, animated: true });
+    if (area.boundary.length) map.current?.fitTo(area.boundary, { top: 60, right: 60, bottom: 260, left: 60 });
   };
   const addArea = () => { if (!campus) return; reset(); setMode('area'); setMsg(null); };
 
@@ -125,10 +124,31 @@ function Inner() {
     catch (e) { setMsg({ ok: false, text: errorOf(e).message }); } finally { setSaving(false); }
   };
 
-  const coords = useMemo(() => activePts.map(toLL), [activePts]);
   const centre: Pt = campus ? [campus.latitude, campus.longitude] : ABUJA;
   const drawing = mode !== 'idle';
   const isCircle = selected?.kind === 'circle';
+
+  // Everything the map draws, rebuilt only when its inputs change.
+  const scene = useMemo<MapScene>(() => {
+    const shapes: MapShape[] = [];
+    campus?.areas.filter((a) => a.id !== selectedAreaId && a.boundary.length >= 3).forEach((a) => shapes.push({
+      id: `area-${a.id}`, points: a.boundary, weight: 3, fillOpacity: 0.06,
+      color: a.is_active ? '#17803D' : '#C0392B', fill: a.is_active ? '#17803D' : '#C0392B',
+    }));
+    buildings.filter((f) => f.id !== selectedId && (f.polygon?.length ?? 0) >= 3).forEach((f) => shapes.push({
+      id: `fence-${f.id}`, points: f.polygon!, weight: 2, fillOpacity: 0.14,
+      color: f.is_active ? '#6B7A8C' : '#C0392B', fill: '#6B7A8C',
+    }));
+    if (mode === 'area' && pts.length >= 2) shapes.push({ id: 'draft', points: pts, weight: 3, fillOpacity: 0.14, color: '#17803D', fill: '#17803D' });
+    if (mode === 'building' && pts.length >= 2) shapes.push({ id: 'draft', points: pts, weight: 3, fillOpacity: 0.22, color: colors.navy, fill: colors.navy });
+    return { shapes, handles: drawing ? pts : [], satellite };
+  }, [campus, buildings, selectedId, selectedAreaId, mode, pts, drawing, satellite]);
+
+  const onMapTap = (p: MapPt) => {
+    if (!drawing || (mode === 'building' && isCircle)) return;
+    setActivePts((prev) => [...prev, p]);
+  };
+  const onMovePoint = (i: number, p: MapPt) => setActivePts((prev) => prev.map((q, j) => (j === i ? p : q)));
 
   return (
     <View className="flex-1 bg-surface">
@@ -172,26 +192,7 @@ function Inner() {
 
       {campusId ? (
         <View className="flex-1 overflow-hidden rounded-t-[24px]" style={shadow}>
-          <MapView ref={map} style={{ flex: 1 }} mapType={satellite ? 'hybrid' : 'standard'}
-            initialRegion={{ latitude: centre[0], longitude: centre[1], latitudeDelta: 0.006, longitudeDelta: 0.006 }}
-            onPress={(e) => { if (!drawing || (mode === 'building' && isCircle)) return; const c = e.nativeEvent.coordinate; setActivePts([...activePts, [c.latitude, c.longitude]]); }}>
-            {campus?.areas.filter((a) => a.id !== selectedAreaId && a.boundary.length >= 3).map((a) => (
-              <Polygon key={`area-${a.id}`} coordinates={a.boundary.map(toLL)} strokeColor={a.is_active ? '#17803D' : '#C0392B'} strokeWidth={3} fillColor={a.is_active ? 'rgba(23,128,61,0.06)' : 'rgba(192,57,43,0.06)'} />
-            ))}
-            {mode === 'area' && pts.length >= 3 ? <Polygon coordinates={pts.map(toLL)} strokeColor="#17803D" strokeWidth={3} fillColor="rgba(23,128,61,0.14)" /> : null}
-            {buildings.filter((f) => f.id !== selectedId && (f.polygon?.length ?? 0) >= 3).map((f) => (
-              <Polygon key={f.id} coordinates={f.polygon!.map(toLL)} strokeColor={f.is_active ? '#6B7A8C' : '#C0392B'} strokeWidth={2} fillColor="rgba(107,122,140,0.14)" />
-            ))}
-            {mode === 'building' && pts.length >= 3 ? <Polygon coordinates={pts.map(toLL)} strokeColor={colors.navy} strokeWidth={3} fillColor="rgba(25,41,125,0.22)" /> : null}
-            {drawing ? coords.map((c, i) => (
-              <Marker key={`${mode}-${i}-${activePts.length}`} coordinate={c} draggable anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}
-                onDragEnd={(e) => { const n = e.nativeEvent.coordinate; setActivePts(activePts.map((q, j) => (j === i ? [n.latitude, n.longitude] : q))); }}>
-                <View className="h-[22px] w-[22px] items-center justify-center rounded-full border-[3px] border-white bg-navy" style={{ elevation: 4 }}>
-                  <Text className="text-[9px] font-extrabold text-white">{i + 1}</Text>
-                </View>
-              </Marker>
-            )) : null}
-          </MapView>
+          <OsmMap ref={map} center={centre} zoom={17} initialFit={campus?.areas.flatMap((a) => a.boundary)} scene={scene} onTap={onMapTap} onMovePoint={onMovePoint} />
           <Pressable onPress={() => setSatellite((s) => !s)} className="absolute right-3 top-3 h-11 w-11 items-center justify-center rounded-full bg-white active:opacity-80" style={shadow} accessibilityLabel="Toggle satellite view">
             <Icon name={satellite ? 'map-outline' : 'earth'} size={20} color={colors.navy} />
           </Pressable>
